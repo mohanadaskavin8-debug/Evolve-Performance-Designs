@@ -1,0 +1,87 @@
+Make sure the four tasks remain one integrated system, not four isolated implementations.
+Your dependency chain should be:
+Task #1
+Commerce foundation
+↓
+Task #2
+Admin controls the commerce foundation
+↓
+Task #3
+Admin orders → ShipStation → tracking
+↓
+Task #4
+Resend → transactional + marketing communication
+And the shared database/API should be the backbone of everything.
+One thing I'd add before clicking approve
+Tell Claude/Fable 5:
+Do not consider a task complete merely because its UI exists. Every button and workflow must be connected to the real database/API and persist correctly.
+Especially for:
+Add product → database
+Change inventory → database
+Checkout → Stripe
+Stripe webhook → order
+Order → ShipStation
+ShipStation → tracking
+Tracking → email
+Return → refund → inventory
+Admin content → storefront
+Newsletter signup → Resend
+Marketing campaign → actual recipients
+Fraud hold → prevents fulfillment
+Also make sure test mode/sandbox environments are used initially for Stripe, ShipStation and Resend where applicable.
+One more subtle issue
+Your sentence:
+"Stock reservations during checkout, so two people can never buy the last item at the same time"
+is good, but make sure the implementation uses database-level transactional locking/atomic operations, not simply frontend JavaScript. Otherwise concurrent purchases can still oversell.
+My verdict
+Task #1: APPROVE ✅
+The spec now covers essentially the full foundation:
+Commerce
+Products
+Variants
+Inventory
+Cart
+Checkout
+Stripe
+Taxes
+Discounts
+Fraud
+Orders
+Fulfillment
+ShipStation
+Shipping rates
+Labels
+Customs
+Tracking
+International orders
+Customer
+Accounts
+Reviews
+Returns
+Support
+Tracking
+Transactional emails
+Owner
+Admin
+Inventory
+Products
+Orders
+Returns
+Fraud
+Shipping
+Customers
+Content
+Analytics
+Financial reporting
+Exports
+System health
+Marketing
+Subscribers
+Audiences
+Campaigns
+Automations
+Resend
+Unsubscribe
+Analytics
+And most importantly, the business owner can operate the company without touching the codebase.
+I'd approve it and let Replit start building.
