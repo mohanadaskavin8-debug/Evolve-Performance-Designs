@@ -1,0 +1,2354 @@
+BUILD A COMPLETE PRODUCTION-READY E-COMMERCE BUSINESS PLATFORM
+
+I want you to build a complete, production-quality, full-stack e-commerce platform for a company that sells anime/movie-themed lifting straps, wristbands, belts, and other fitness accessories worldwide.
+
+THIS IS NOT JUST A WEBSITE.
+
+It must be both:
+
+1. A world-class cinematic e-commerce storefront for customers
+2. A complete business operating system/admin portal for the owner
+
+The customer-facing website should feel like a combination of:
+
+- AAA anime/game experience
+- Cinematic movie website
+- Premium fitness brand
+- High-end streetwear brand
+- Nike-level product campaign
+- Luxury e-commerce
+- Awwwards-level interactive website
+
+The admin portal should feel completely different:
+
+- Extremely simple
+- Extremely fast
+- Extremely organized
+- Extremely easy to understand
+- Mobile friendly
+- Designed so a non-technical business owner can run the company without touching code
+
+The ultimate goal is:
+
+CUSTOMER:
+"This is one of the coolest websites I've ever seen."
+
+OWNER:
+"I can run my entire company from here."
+
+==================================================
+1. IMPORTANT COPYRIGHT REQUIREMENT
+==================================================
+
+The company sells anime/movie-themed products.
+
+Do NOT use copyrighted anime/movie characters, footage, logos, music, or artwork unless the company has the appropriate licenses.
+
+The system must support licensed artwork when available.
+
+For demo/placeholder visuals, use ORIGINAL anime-inspired artwork rather than copying existing copyrighted characters.
+
+For example, use original:
+
+- Anime-inspired athletes
+- Martial artists
+- Energy effects
+- Training scenes
+- Cinematic environments
+- Original characters
+
+The owner will provide the actual product designs in a PDF.
+
+==================================================
+2. PRODUCT DESIGN PDF
+==================================================
+
+The business owner has provided a PDF containing the designs for the company's belts/straps.
+
+The PDF is an important source asset.
+
+When the PDF is available in the project:
+
+1. Inspect the PDF.
+2. Identify every unique product/design.
+3. Identify variants and colorways.
+4. Extract product names where provided.
+5. Extract relevant product information where available.
+6. Organize the designs into a product catalog.
+7. Create DRAFT product records from the designs.
+8. Allow the admin to review and edit everything.
+9. NEVER automatically publish products without admin approval.
+10. NEVER invent product designs or specifications that aren't supported by the provided materials.
+
+Create an admin feature:
+
+ADMIN → PRODUCT DESIGN IMPORT
+
+Workflow:
+
+UPLOAD PDF
+↓
+ANALYZE PDF
+↓
+IDENTIFY DESIGNS
+↓
+CREATE DRAFT PRODUCTS
+↓
+ADMIN REVIEWS
+↓
+ADMIN EDITS
+↓
+PUBLISH
+
+If the PDF cannot be reliably interpreted automatically, create a manual review interface rather than guessing.
+
+==================================================
+3. TECH STACK
+==================================================
+
+Use a modern production-ready stack.
+
+Preferred:
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+- PostgreSQL / Supabase
+- Stripe
+- ShipStation
+- Resend
+- GSAP
+- GSAP ScrollTrigger
+- Framer Motion where appropriate
+- Google Analytics
+- Canvas/WebGL only where it meaningfully improves the experience
+
+Use clean component architecture.
+
+Separate:
+
+- UI
+- Business logic
+- Database
+- External APIs
+- Authentication
+- Webhooks
+
+External integrations must be isolated.
+
+==================================================
+4. CUSTOMER WEBSITE
+==================================================
+
+Create:
+
+/
+ /shop
+ /products/[slug]
+ /collections/[slug]
+ /cart
+ /checkout
+ /track
+ /account
+ /account/orders
+ /story
+ /about
+ /faq
+
+The storefront must be fully responsive.
+
+==================================================
+5. MOBILE-FIRST
+==================================================
+
+The website must be designed MOBILE FIRST.
+
+It must work exceptionally well on:
+
+- iPhone
+- Android
+- iPad
+- Tablets
+- Laptop
+- Desktop
+- Large monitors
+
+DO NOT simply shrink the desktop site.
+
+Design separate mobile interaction patterns.
+
+Mobile must support:
+
+- Touch gestures
+- Swipe product galleries
+- Touch-friendly buttons
+- Mobile navigation
+- Mobile cart
+- Mobile checkout
+- Mobile tracking
+- Mobile customer accounts
+- Mobile admin
+
+Heavy visual effects should automatically reduce on weaker devices.
+
+==================================================
+6. CINEMATIC INTRO
+==================================================
+
+The first visit should begin with an unforgettable cinematic animation.
+
+Do NOT immediately show a normal e-commerce homepage.
+
+Example:
+
+Black screen.
+
+Subtle particles.
+
+An original anime-inspired athlete appears in a dark training environment.
+
+The camera slowly moves forward.
+
+The athlete approaches a barbell.
+
+They put on the company's lifting straps.
+
+They wrap the strap around the bar.
+
+The strap tightens.
+
+Camera rapidly moves toward the product.
+
+The product fills the screen.
+
+Energy/light effects expand outward.
+
+The company logo appears.
+
+The scene transitions seamlessly into the homepage.
+
+The experience should feel like:
+
+ANIME OPENING
++
+AAA GAME INTRO
++
+LUXURY PRODUCT COMMERCIAL
++
+MOVIE TRAILER
+
+Use:
+
+- GSAP
+- ScrollTrigger
+- Canvas/WebGL where appropriate
+- Image sequences
+- Parallax
+- Particles
+- Masks
+- Lighting
+- Motion blur
+- Camera-like movement
+
+Do NOT create a massive video that destroys performance.
+
+Include:
+
+SKIP INTRO
+
+Remember via local storage/cookie if the user has already seen it.
+
+==================================================
+7. HOMEPAGE
+==================================================
+
+After the intro, transition into the homepage.
+
+Hero should contain:
+
+POWERFUL HEADLINE
+
+Example:
+
+TRAIN LIKE THE HERO.
+
+Supporting text:
+
+Anime-inspired lifting gear built for people who refuse to train ordinary.
+
+Buttons:
+
+EXPLORE THE COLLECTION
+OUR STORY
+
+Hero should have:
+
+- Cinematic artwork
+- Product imagery
+- Parallax
+- Mouse interaction
+- Particles
+- Lighting
+- Depth
+
+==================================================
+8. NAVIGATION
+==================================================
+
+Create a premium minimal navigation.
+
+Desktop:
+
+LOGO
+SHOP
+COLLECTIONS
+STORY
+ABOUT
+CART
+
+The navbar should transform while scrolling.
+
+Cart count should animate.
+
+When adding an item:
+
+CART SHAKES
+↓
+COUNT POPS
+↓
+SUBTLE ENERGY EFFECT
+
+Mobile:
+
+LOGO
+CART
+
+Menu opens into:
+
+SHOP
+COLLECTIONS
+STORY
+ABOUT
+TRACK ORDER
+FAQ
+
+==================================================
+9. CUSTOM CURSOR
+==================================================
+
+Desktop only.
+
+Create an elegant custom cursor.
+
+Normal:
+Small glowing dot.
+
+Hover button:
+Cursor expands.
+
+Hover product:
+Displays:
+
+VIEW
+
+Disable custom cursor on mobile.
+
+Never interfere with usability.
+
+==================================================
+10. SCROLL EXPERIENCE
+==================================================
+
+Scrolling should feel like moving through a movie.
+
+Use:
+
+- Parallax
+- Pinning
+- Horizontal scrolling
+- Scroll-triggered reveals
+- Image masking
+- Scale transitions
+- Text transformations
+- Product reveals
+- Layered depth
+- Cinematic zoom
+
+Do NOT add random animations everywhere.
+
+Every animation must have a purpose.
+
+==================================================
+11. COLLECTION EXPERIENCE
+==================================================
+
+Create a cinematic transition into the product collection.
+
+Example:
+
+Training scene transitions into product display.
+
+Text:
+
+CHOOSE YOUR POWER.
+
+Then reveal collections.
+
+==================================================
+12. PRODUCT COLLECTION
+==================================================
+
+Do NOT use generic Shopify-style cards.
+
+Each product card should feel premium.
+
+Include:
+
+- Product image
+- Product name
+- Price
+- Collection
+- Theme
+- Stock status
+- Quick Add
+
+Hover:
+
+- Product movement
+- Lighting change
+- Image movement
+- CTA reveal
+- Background reaction
+- Subtle energy effect
+
+==================================================
+13. PRODUCT PAGE
+==================================================
+
+Product page should feel like a premium product reveal.
+
+Include:
+
+- Large gallery
+- Product name
+- Price
+- Description
+- Materials
+- Benefits
+- Size
+- Color
+- Variants
+- Quantity
+- Inventory
+- Add to Cart
+- Buy Now
+- Reviews
+- Shipping
+- Returns
+- FAQ
+
+Create cinematic sections:
+
+THE PRODUCT
+
+BUILT FOR GRIP
+
+DETAILS MATTER
+
+THE COLLECTION
+
+Show detailed product imagery:
+
+- Stitching
+- Material
+- Padding
+- Grip
+- Durability
+- Design
+
+==================================================
+14. PRODUCT VARIANTS
+==================================================
+
+Changing a variant should be animated.
+
+When selecting a variant:
+
+Previous image exits
+↓
+New image enters
+↓
+Lighting changes
+↓
+Selected option animates
+↓
+Price transitions
+
+Quantity:
+
+− 1 +
+
+Animate quantity changes.
+
+Prevent invalid quantities.
+
+==================================================
+15. ADD TO CART
+==================================================
+
+Create an impressive Add to Cart interaction.
+
+When clicked:
+
+PRODUCT IMAGE
+↓
+SHRINK
+↓
+TRAVEL TOWARD CART
+↓
+CART REACTS
+↓
+COUNT INCREASES
+
+Then display:
+
+ADDED TO CART
+
+Do not block the customer.
+
+==================================================
+16. CART
+==================================================
+
+Desktop:
+Animated sliding cart drawer.
+
+Mobile:
+Full-screen cart.
+
+Display:
+
+- Product
+- Image
+- Quantity
+- Price
+- Remove
+- Subtotal
+- Shipping
+- Tax
+- Total
+
+Animate:
+
+- Add
+- Remove
+- Quantity
+- Price changes
+
+==================================================
+17. CHECKOUT
+==================================================
+
+Checkout must be extremely simple.
+
+Do not sacrifice conversion for animation.
+
+Flow:
+
+INFORMATION
+↓
+SHIPPING
+↓
+PAYMENT
+↓
+COMPLETE
+
+Support:
+
+- Guest checkout
+- Customer accounts
+- Credit/debit cards
+- Apple Pay
+- Google Pay
+- Stripe-supported payment methods
+
+Never store raw card information.
+
+==================================================
+18. STRIPE
+==================================================
+
+Use Stripe for payment processing.
+
+Implement secure Stripe webhooks.
+
+Payment flow:
+
+STRIPE
+↓
+PAYMENT SUCCESS
+↓
+VERIFY WEBHOOK
+↓
+CREATE ORDER
+↓
+DECREASE INVENTORY
+↓
+CREATE SHIPSTATION ORDER
+↓
+SEND RESEND EMAIL
+
+Webhook processing MUST be idempotent.
+
+If Stripe sends the same webhook twice:
+
+ONLY ONE ORDER MUST BE CREATED.
+
+==================================================
+19. PAYMENT SUCCESS ANIMATION
+==================================================
+
+After successful payment:
+
+Darken screen.
+
+Energy/light expands.
+
+Display:
+
+MISSION COMPLETE
+
+ORDER #10452
+
+YOUR GEAR IS BEING PREPARED.
+
+Button:
+
+TRACK ORDER
+
+Animation must never interfere with order creation.
+
+==================================================
+20. DATABASE
+==================================================
+
+Use a proper relational database.
+
+Create tables for:
+
+users
+
+products
+
+product_variants
+
+product_images
+
+collections
+
+orders
+
+order_items
+
+shipments
+
+inventory_transactions
+
+discounts
+
+reviews
+
+customers
+
+email_subscribers
+
+email_campaigns
+
+admin_users
+
+admin_activity_logs
+
+website_content
+
+website_sections
+
+==================================================
+21. ORDER STATUS SYSTEM
+==================================================
+
+Create internal order statuses:
+
+ORDER_PLACED
+PAYMENT_CONFIRMED
+PROCESSING
+PACKAGED
+LABEL_CREATED
+SHIPPED
+IN_TRANSIT
+OUT_FOR_DELIVERY
+DELIVERED
+EXCEPTION
+CANCELLED
+REFUNDED
+RETURNED
+
+These statuses should power:
+
+- Admin portal
+- Customer tracking page
+- Emails
+- Analytics
+
+==================================================
+22. SHIPSTATION
+==================================================
+
+Integrate ShipStation.
+
+After successful payment:
+
+DATABASE ORDER
+↓
+SHIPSTATION ORDER
+
+Automatically send:
+
+- Customer
+- Email
+- Address
+- Product
+- SKU
+- Quantity
+- Weight
+- Dimensions
+- Order number
+- Total
+
+The employee should NOT manually re-enter orders.
+
+Support:
+
+- Shipping services
+- Shipping rates
+- Labels
+- Tracking
+- International shipping
+- Returns
+- Customs information
+- Carrier services
+
+==================================================
+23. SHIPPING LABELS
+==================================================
+
+Admin order page:
+
+ORDER #10452
+
+PAID
+READY TO SHIP
+
+Carrier:
+UPS
+
+Service:
+International
+
+Tracking:
+1ZXXXXXXXX
+
+Buttons:
+
+VIEW LABEL
+PRINT LABEL
+TRACK SHIPMENT
+
+==================================================
+24. TRACKING
+==================================================
+
+Create:
+
+/track
+
+Customer enters:
+
+ORDER NUMBER
++
+EMAIL
+
+Show:
+
+✓ ORDER PLACED
+↓
+✓ PAYMENT CONFIRMED
+↓
+✓ ORDER PACKAGED
+↓
+✓ LABEL CREATED
+↓
+✓ SHIPPED
+↓
+● IN TRANSIT
+↓
+○ OUT FOR DELIVERY
+↓
+○ DELIVERED
+
+Animate the current state.
+
+Include:
+
+- Carrier
+- Tracking number
+- Tracking link
+- Estimated delivery when available
+
+==================================================
+25. SHIPSTATION TRACKING WEBHOOKS
+==================================================
+
+Use ShipStation webhook functionality where supported.
+
+Flow:
+
+SHIPSTATION
+↓
+TRACKING EVENT
+↓
+WEBHOOK
+↓
+BACKEND
+↓
+DATABASE
+↓
+CUSTOMER TRACKING PAGE
+↓
+RESEND EMAIL
+
+Normalize carrier events into the internal order statuses.
+
+Do NOT send an email for every tiny carrier scan.
+
+Only send emails for meaningful milestones.
+
+==================================================
+26. AUTOMATIC EMAIL SYSTEM — RESEND
+==================================================
+
+Use RESEND as the email infrastructure.
+
+There must be TWO separate email systems:
+
+1. Transactional email
+2. Marketing email
+
+==================================================
+27. TRANSACTIONAL EMAIL AUTOMATION
+==================================================
+
+Automatically send branded emails when meaningful order events happen.
+
+EMAIL #1 — ORDER PLACED
+
+Trigger:
+Successful payment/order creation.
+
+Subject example:
+
+ORDER CONFIRMED — YOUR JOURNEY BEGINS
+
+Include:
+
+- Customer name
+- Order number
+- Products
+- Quantity
+- Total
+- Shipping address
+- Estimated shipping information
+- Track Order button
+
+EMAIL #2 — ORDER BEING PREPARED
+
+Trigger:
+Admin/fulfillment marks order as processing/preparing.
+
+Subject:
+
+YOUR GEAR IS BEING PREPARED
+
+EMAIL #3 — ORDER PACKAGED
+
+Trigger:
+Admin marks order as packaged.
+
+Subject:
+
+YOUR GEAR IS PACKED
+
+EMAIL #4 — SHIPPING LABEL CREATED
+
+Trigger:
+ShipStation creates shipping label.
+
+Subject:
+
+YOUR ORDER IS READY TO GO
+
+Include:
+
+- Carrier
+- Tracking number
+- Track Order button
+
+EMAIL #5 — ORDER SHIPPED
+
+Trigger:
+Shipment becomes shipped.
+
+Subject:
+
+YOUR ORDER IS ON THE MOVE
+
+Include tracking.
+
+EMAIL #6 — ORDER IN TRANSIT
+
+Trigger:
+Meaningful carrier tracking milestone.
+
+Subject:
+
+YOUR GEAR IS ON THE WAY
+
+EMAIL #7 — OUT FOR DELIVERY
+
+Trigger:
+Carrier reports out for delivery.
+
+Subject:
+
+TODAY'S THE DAY
+
+EMAIL #8 — DELIVERED
+
+Trigger:
+Carrier reports delivered.
+
+Subject:
+
+YOUR PACKAGE HAS ARRIVED
+
+EMAIL #9 — SHIPPING EXCEPTION
+
+Trigger:
+Carrier reports a meaningful exception.
+
+Subject:
+
+WE HIT A ROADBLOCK
+
+Explain the issue and provide tracking.
+
+EMAIL #10 — REFUND
+
+Trigger:
+Refund processed.
+
+EMAIL #11 — CANCELLATION
+
+Trigger:
+Order cancelled.
+
+All transactional emails should be beautifully branded.
+
+Use:
+
+- Logo
+- Product images
+- Order information
+- Tracking button
+- Consistent typography
+- Brand visuals
+
+==================================================
+28. EMAIL AUTOMATION RULES
+==================================================
+
+Do NOT send duplicate emails.
+
+Every email event must be idempotent.
+
+Track which events have already triggered emails.
+
+Example:
+
+order #10452
+
+SHIPPED_EMAIL_SENT = TRUE
+
+Never send it again unless explicitly triggered by admin.
+
+==================================================
+29. MARKETING EMAIL SYSTEM
+==================================================
+
+Create:
+
+ADMIN → EMAIL MARKETING
+
+The owner should be able to manage marketing emails from the website.
+
+Allow:
+
+- Contacts
+- Subscribers
+- Audiences
+- Segments
+- Campaigns
+- Drafts
+- Scheduled campaigns
+- Sent campaigns
+
+Campaign examples:
+
+NEW PRODUCT DROP
+NEW COLLECTION
+RESTOCK
+LIMITED EDITION
+DISCOUNT
+BLACK FRIDAY
+CYBER MONDAY
+SUMMER SALE
+NEWSLETTER
+BACK IN STOCK
+ABANDONED CART
+LOYALTY CAMPAIGN
+
+==================================================
+30. MARKETING EMAIL CREATOR
+==================================================
+
+Create a simple campaign builder.
+
+Owner can:
+
+- Enter subject
+- Enter preview text
+- Select audience
+- Add headline
+- Add text
+- Add image
+- Add product
+- Add discount code
+- Add button
+- Schedule
+- Send test
+- Send campaign
+
+Show email preview.
+
+The owner should NOT need to code HTML.
+
+==================================================
+31. EMAIL AUDIENCES
+==================================================
+
+Allow segmentation such as:
+
+ALL CUSTOMERS
+NEW CUSTOMERS
+REPEAT CUSTOMERS
+HIGH-VALUE CUSTOMERS
+CUSTOMERS WHO BOUGHT STRAPS
+CUSTOMERS WHO BOUGHT WRISTBANDS
+CUSTOMERS WHO HAVE NOT PURCHASED
+EMAIL SUBSCRIBERS
+
+Support customer consent/preferences.
+
+Marketing emails must have unsubscribe functionality.
+
+Do not treat transactional order emails as marketing consent.
+
+==================================================
+32. EMAIL ANALYTICS
+==================================================
+
+Admin email dashboard should show where supported:
+
+- Sent
+- Delivered
+- Bounced
+- Opens
+- Clicks
+- Unsubscribes
+- Complaints
+
+Campaign example:
+
+SUMMER COLLECTION
+
+Sent:
+2,104
+
+Delivered:
+2,081
+
+Open rate:
+48%
+
+Click rate:
+12%
+
+==================================================
+33. ADMIN PORTAL
+==================================================
+
+Create:
+
+/admin
+
+This must be a completely secure administrator portal.
+
+The admin portal is the BUSINESS OPERATING SYSTEM.
+
+The owner must be able to manage almost everything from it.
+
+==================================================
+34. ADMIN DASHBOARD
+==================================================
+
+When owner logs in:
+
+GOOD MORNING 👋
+
+TODAY'S SALES
+$1,284.92
+
+ORDERS
+31
+
+TO SHIP
+12
+
+IN TRANSIT
+47
+
+DELIVERED
+83
+
+LOW STOCK
+8
+
+Also show:
+
+ATTENTION REQUIRED
+
+- Orders waiting to ship
+- Low inventory
+- Shipping exceptions
+- Failed payments
+- Out-of-stock products
+- Important notifications
+
+==================================================
+35. ADMIN QUICK ACTIONS
+==================================================
+
+Create:
+
++ ADD PRODUCT
++ ADD INVENTORY
+VIEW ORDERS
+CREATE DISCOUNT
+EMAIL MARKETING
+MANAGE WEBSITE
+VIEW CUSTOMERS
+
+==================================================
+36. ORDER MANAGEMENT
+==================================================
+
+Admin can:
+
+- View orders
+- Search orders
+- Filter
+- Sort
+- Open orders
+- View customer
+- View payment
+- View products
+- View shipping
+- View tracking
+- Print labels
+- Create labels
+- Fulfill orders
+- Refund
+- Cancel
+- Add internal notes
+
+==================================================
+37. BULK ORDER MANAGEMENT
+==================================================
+
+Allow selecting multiple orders.
+
+Actions:
+
+PRINT LABELS
+EXPORT ORDERS
+MARK FULFILLED
+SEND EMAIL
+
+==================================================
+38. PRODUCT MANAGEMENT
+==================================================
+
+Admin can:
+
+- Add
+- Edit
+- Archive
+- Restore
+- Change price
+- Change description
+- Change SKU
+- Change images
+- Change variants
+- Change inventory
+- Change collection
+- Publish
+- Unpublish
+
+Statuses:
+
+DRAFT
+ACTIVE
+OUT OF STOCK
+ARCHIVED
+
+Do not permanently delete products that belong to historical orders.
+
+Use ARCHIVE.
+
+==================================================
+39. ADD PRODUCT WIZARD
+==================================================
+
+Make adding a product extremely easy.
+
+STEP 1:
+Basic information
+
+STEP 2:
+Design / Images
+
+STEP 3:
+Variants
+
+STEP 4:
+Pricing
+
+STEP 5:
+Inventory
+
+STEP 6:
+Shipping
+
+STEP 7:
+SEO
+
+STEP 8:
+Publish
+
+Show live storefront preview.
+
+==================================================
+40. INVENTORY MANAGEMENT
+==================================================
+
+Dedicated inventory dashboard.
+
+Example:
+
+BLACK STRAPS       82
+RED STRAPS         13 ⚠ LOW
+BLUE STRAPS         4 ⚠ CRITICAL
+WHITE STRAPS        0 OUT OF STOCK
+
+Admin can:
+
+ADD INVENTORY
+REMOVE INVENTORY
+CORRECT INVENTORY
+
+Every change requires a reason.
+
+Reasons:
+
+RESTOCK
+DAMAGED
+LOST
+MANUAL CORRECTION
+RETURN
+OTHER
+
+==================================================
+41. INVENTORY HISTORY
+==================================================
+
+Every inventory change records:
+
+- Product
+- Previous quantity
+- New quantity
+- Difference
+- Reason
+- Admin
+- Timestamp
+
+==================================================
+42. AUTOMATIC INVENTORY
+==================================================
+
+When payment succeeds:
+
+Decrease inventory automatically.
+
+When an order is cancelled/refunded according to configured rules:
+
+Restore inventory.
+
+Prevent overselling.
+
+Use proper database transactions/locking.
+
+==================================================
+43. LOW STOCK ALERTS
+==================================================
+
+Allow owner to set thresholds.
+
+Example:
+
+LOW STOCK THRESHOLD:
+10
+
+When inventory reaches threshold:
+
+Show dashboard alert.
+
+Optionally send owner an email notification.
+
+==================================================
+44. WEBSITE CONTENT MANAGEMENT
+==================================================
+
+Admin can edit the storefront without coding.
+
+Manage:
+
+Homepage
+Collections
+Story
+About
+FAQ
+Shipping
+Returns
+Announcements
+
+Homepage fields:
+
+- Hero headline
+- Hero subtitle
+- Hero CTA
+- Featured products
+- Promotional banner
+
+==================================================
+45. HOMEPAGE SECTION MANAGER
+==================================================
+
+Allow drag-and-drop section ordering.
+
+Example:
+
+☰ HERO
+☰ FEATURED COLLECTION
+☰ STORY
+☰ PRODUCT SHOWCASE
+☰ REVIEWS
+☰ FAQ
+☰ NEWSLETTER
+
+==================================================
+46. CUSTOMER MANAGEMENT
+==================================================
+
+Admin can see:
+
+- Name
+- Email
+- Orders
+- Total spent
+- Last order
+- Account status
+
+Customer profile shows complete order history.
+
+==================================================
+47. DISCOUNT MANAGEMENT
+==================================================
+
+Create discounts:
+
+- Percentage
+- Fixed amount
+- Free shipping
+- Product-specific
+- Collection-specific
+- Expiration
+- Usage limit
+
+Example:
+
+WELCOME10
+10% OFF
+Expires September 30
+Maximum uses: 500
+
+==================================================
+48. SHIPPING MANAGEMENT
+==================================================
+
+Admin shipping dashboard:
+
+#1052
+UPS
+IN TRANSIT
+
+#1051
+CANADA POST
+DELIVERED
+
+#1050
+DHL
+OUT FOR DELIVERY
+
+Allow:
+
+VIEW TRACKING
+VIEW LABEL
+PRINT LABEL
+VIEW SHIPMENT
+
+==================================================
+49. BUSINESS SETTINGS
+==================================================
+
+Owner can manage:
+
+- Business name
+- Logo
+- Support email
+- Phone
+- Currency
+- Default country
+- Shipping
+- Tax
+- Returns
+- Social links
+
+==================================================
+50. ADMIN USERS
+==================================================
+
+Support:
+
+OWNER
+Full access
+
+MANAGER
+Products
+Inventory
+Orders
+Customers
+Shipping
+
+STAFF
+Limited fulfillment capabilities
+
+Use role-based access control.
+
+==================================================
+51. ADMIN ACTIVITY LOG
+==================================================
+
+Track every important admin action.
+
+Example:
+
+John changed inventory
+Black Straps
+82 → 182
+
+Sarah created product
+Dragon Collection Strap
+
+John fulfilled order
+#1052
+
+Record:
+
+- Admin
+- Action
+- Object
+- Timestamp
+
+==================================================
+52. MOBILE ADMIN
+==================================================
+
+Admin portal MUST work extremely well on phones.
+
+Owner should be able to:
+
+- Check sales
+- View orders
+- Fulfill orders
+- Add inventory
+- Edit products
+- Change prices
+- Create discounts
+- View tracking
+- View customers
+- Manage email campaigns
+
+from an iPhone/Android phone.
+
+==================================================
+53. ADMIN DESIGN
+==================================================
+
+Unlike the customer site, the admin portal should NOT be overly cinematic.
+
+It should be:
+
+- Clean
+- Fast
+- Professional
+- Minimal
+- Easy to understand
+- Efficient
+
+Use animations only where they improve usability.
+
+Examples:
+
+- Toast notifications
+- Drawer animations
+- Modal transitions
+- Count updates
+- Confirmation animations
+
+==================================================
+54. ONE-CLICK BUSINESS MANAGEMENT
+==================================================
+
+Reduce unnecessary clicks.
+
+For example:
+
+ORDER #1052
+
+[FULFILL]
+[PRINT LABEL]
+[TRACK]
+[REFUND]
+
+Do not force the owner through five different pages to accomplish a common action.
+
+==================================================
+55. ANALYTICS
+==================================================
+
+Integrate Google Analytics.
+
+Track:
+
+- Visitors
+- Product views
+- Add to cart
+- Checkout
+- Purchases
+- Revenue
+- Traffic source
+- Country
+- Device
+- Product performance
+
+Admin dashboard:
+
+TOP PRODUCTS
+
+1. Black Straps
+2. Dragon Collection
+3. Red Wristbands
+
+Also provide sales/order analytics where practical.
+
+==================================================
+56. INTERNATIONAL SALES
+==================================================
+
+The company sells worldwide.
+
+Do NOT hardcode the system to Canada.
+
+Support:
+
+- International addresses
+- Multiple countries
+- Multiple currencies
+- International shipping
+- Customs
+- Duties/taxes
+- Carrier differences
+- Shipping services
+
+Design the database and checkout to support global expansion.
+
+==================================================
+57. SEO
+==================================================
+
+Implement:
+
+- Metadata
+- Open Graph
+- Product structured data
+- Organization structured data
+- Sitemap
+- Robots.txt
+- Canonical URLs
+- SEO-friendly product URLs
+
+Example:
+
+/products/black-lifting-straps
+
+==================================================
+58. PERFORMANCE
+==================================================
+
+This website will have heavy visual effects.
+
+Performance is critical.
+
+Use:
+
+- Lazy loading
+- Code splitting
+- Optimized images
+- WebP
+- AVIF
+- Dynamic imports
+- GPU-friendly animations
+- Lazy-loaded animation libraries
+- Reduced WebGL on mobile/weak hardware
+
+Target excellent Core Web Vitals.
+
+Respect:
+
+prefers-reduced-motion
+
+When enabled, reduce cinematic animation significantly.
+
+==================================================
+59. SOUND
+==================================================
+
+Do NOT autoplay sound.
+
+Architect for optional sound effects later.
+
+Potential sounds:
+
+- Button click
+- Product selection
+- Cart addition
+- Cinematic transition
+- Checkout success
+
+If implemented:
+
+SOUND ON
+SOUND OFF
+
+==================================================
+60. 404 PAGE
+==================================================
+
+Create a cinematic 404 page.
+
+Example:
+
+Original anime-inspired training environment.
+
+YOU TRAINED TOO HARD.
+
+THIS PAGE DOESN'T EXIST.
+
+[RETURN TO BASE]
+
+==================================================
+61. ERROR STATES
+==================================================
+
+Never show raw technical errors.
+
+Example:
+
+SOMETHING INTERRUPTED THE TRANSMISSION.
+
+[TRY AGAIN]
+
+Errors should remain understandable.
+
+==================================================
+62. ACCESSIBILITY
+==================================================
+
+Use:
+
+- Semantic HTML
+- Keyboard navigation
+- Focus states
+- Alt text
+- Accessible buttons
+- Screen-reader labels
+- Good contrast
+- Reduced motion support
+
+Do not rely on animation alone to communicate information.
+
+==================================================
+63. SECURITY
+==================================================
+
+Implement:
+
+- Secure authentication
+- Admin authorization
+- Role-based permissions
+- Environment variables
+- Stripe webhook verification
+- ShipStation webhook verification where supported
+- Input validation
+- Rate limiting where appropriate
+- Secure database queries
+- XSS protection
+- SQL injection protection
+- Idempotent webhooks
+
+Never expose API secrets in client-side code.
+
+==================================================
+64. ENVIRONMENT VARIABLES
+==================================================
+
+Create .env.example
+
+DATABASE_URL=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+
+SHIPSTATION_API_KEY=
+SHIPSTATION_API_SECRET=
+
+RESEND_API_KEY=
+
+NEXT_PUBLIC_SITE_URL=
+
+NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=
+
+Never hardcode secrets.
+
+==================================================
+65. FAILURE RESILIENCE
+==================================================
+
+If Stripe succeeds but ShipStation is temporarily unavailable:
+
+PAYMENT = SUCCESS
+ORDER = CREATED
+FULFILLMENT = PENDING
+
+Never lose the order.
+
+Retry failed API calls.
+
+Show the problem to the admin.
+
+If Resend fails:
+
+The order must still exist.
+
+External services must NEVER corrupt the database.
+
+==================================================
+66. WEBHOOKS
+==================================================
+
+Create secure webhook endpoints for:
+
+STRIPE
+
+- Payment succeeded
+- Payment failed
+- Refund
+- Other relevant payment events
+
+SHIPSTATION
+
+- Shipment creation
+- Tracking
+- Delivery
+- Exceptions
+- Relevant fulfillment events
+
+All webhook processing must be idempotent.
+
+==================================================
+67. AUTOMATED BUSINESS FLOW
+==================================================
+
+The complete business should work like:
+
+CUSTOMER
+↓
+WEBSITE
+↓
+PRODUCT
+↓
+CART
+↓
+CHECKOUT
+↓
+STRIPE
+↓
+PAYMENT SUCCESS
+↓
+DATABASE ORDER CREATED
+↓
+INVENTORY DECREASED
+↓
+RESEND ORDER CONFIRMATION
+↓
+SHIPSTATION ORDER CREATED
+↓
+ORDER PACKAGED
+↓
+RESEND PACKAGED EMAIL
+↓
+SHIPPING LABEL CREATED
+↓
+RESEND LABEL/SHIPPING EMAIL
+↓
+ORDER SHIPPED
+↓
+RESEND SHIPPING EMAIL
+↓
+SHIPSTATION TRACKING
+↓
+SHIPMENT IN TRANSIT
+↓
+RESEND IN-TRANSIT EMAIL
+↓
+OUT FOR DELIVERY
+↓
+RESEND OUT-FOR-DELIVERY EMAIL
+↓
+DELIVERED
+↓
+RESEND DELIVERED EMAIL
+↓
+CUSTOMER TRACKING PAGE UPDATED
+↓
+ADMIN DASHBOARD UPDATED
+
+The owner should NOT manually:
+
+- Re-enter orders
+- Copy customer addresses
+- Copy tracking numbers
+- Email tracking numbers
+- Update inventory
+- Update shipment statuses
+- Create customer accounts
+- Manually send standard order emails
+
+The physical business task should primarily be:
+
+PACK PRODUCT
+↓
+HAND TO CARRIER
+
+==================================================
+68. MARKETING AUTOMATION
+==================================================
+
+Eventually support automated marketing workflows such as:
+
+NEW CUSTOMER
+↓
+WELCOME EMAIL
+
+PURCHASE
+↓
+ORDER EMAILS
+↓
+POST-PURCHASE EMAIL
+
+PRODUCT RESTOCK
+↓
+NOTIFY INTERESTED CUSTOMERS
+
+CUSTOMER HAS NOT PURCHASED FOR 90 DAYS
+↓
+RE-ENGAGEMENT CAMPAIGN
+
+NEW COLLECTION
+↓
+ANNOUNCEMENT
+
+SALE
+↓
+PROMOTIONAL CAMPAIGN
+
+All marketing communication must respect applicable consent/unsubscribe requirements.
+
+==================================================
+69. EMAIL DESIGN
+==================================================
+
+Emails should NOT look like plain generic emails.
+
+Create branded HTML emails.
+
+Use:
+
+- Logo
+- Product imagery
+- Brand typography
+- Strong CTA
+- Order information
+- Tracking button
+- Mobile responsive design
+
+Every email must look excellent on mobile.
+
+==================================================
+70. CUSTOMER TRACKING EXPERIENCE
+==================================================
+
+The tracking page should be cinematic but useful.
+
+Show:
+
+ORDER #10452
+
+PRODUCTS
+
+CURRENT STATUS:
+IN TRANSIT
+
+Timeline:
+
+✓ ORDER PLACED
+✓ PAYMENT CONFIRMED
+✓ PACKAGED
+✓ SHIPPED
+● IN TRANSIT
+○ OUT FOR DELIVERY
+○ DELIVERED
+
+TRACKING NUMBER:
+1ZXXXXXXXX
+
+CARRIER:
+UPS
+
+[TRACK WITH CARRIER]
+
+==================================================
+71. CUSTOMER ACCOUNT
+==================================================
+
+Account page:
+
+WELCOME BACK
+
+CURRENT ORDERS
+
+#1052
+IN TRANSIT
+
+#1047
+DELIVERED
+
+#1039
+DELIVERED
+
+Allow:
+
+- Order history
+- Tracking
+- Saved addresses
+- Account settings
+- Marketing preferences
+
+==================================================
+72. ADMIN EMAIL CENTER
+==================================================
+
+Inside admin:
+
+EMAIL MARKETING
+
+Show:
+
+TOTAL SUBSCRIBERS
+2,481
+
+CAMPAIGNS
+24
+
+OPEN RATE
+48%
+
+CLICK RATE
+12%
+
+Buttons:
+
++ CREATE CAMPAIGN
+AUDIENCES
+AUTOMATIONS
+TEMPLATES
+ANALYTICS
+
+==================================================
+73. ADMIN EMAIL TEMPLATES
+==================================================
+
+Create editable templates for:
+
+- Order confirmation
+- Packaged
+- Shipped
+- In transit
+- Out for delivery
+- Delivered
+- Exception
+- Refund
+- Cancellation
+- Marketing campaign
+- Newsletter
+- Product launch
+- Restock
+- Discount
+
+Owner should be able to edit email content without coding.
+
+==================================================
+74. ADMIN WEBSITE PREVIEW
+==================================================
+
+When changing:
+
+- Product
+- Price
+- Hero
+- Collection
+- Banner
+- Product image
+
+provide a preview before publishing.
+
+Use:
+
+SAVE DRAFT
+PREVIEW
+PUBLISH
+
+==================================================
+75. PRODUCT PUBLISHING
+==================================================
+
+New products imported from the PDF should start as:
+
+DRAFT
+
+Admin reviews:
+
+- Name
+- Description
+- Images
+- Design
+- Price
+- SKU
+- Variants
+- Inventory
+- Shipping
+
+Then:
+
+PUBLISH
+
+Only published products appear in the storefront.
+
+==================================================
+76. PRODUCT SKU SYSTEM
+==================================================
+
+Every product/variant should have a unique SKU.
+
+Example:
+
+STRAP-BLK-001
+
+Ensure SKU uniqueness.
+
+Use SKU across:
+
+- Database
+- Stripe metadata where appropriate
+- ShipStation
+- Inventory
+- Orders
+- Admin
+
+==================================================
+77. ORDER NUMBER SYSTEM
+==================================================
+
+Create human-readable order numbers.
+
+Example:
+
+#10452
+
+Order number must be unique.
+
+==================================================
+78. AUDITABILITY
+==================================================
+
+Important business changes should be logged.
+
+Examples:
+
+Price changed
+Inventory changed
+Product published
+Product archived
+Order refunded
+Order cancelled
+Admin login
+Admin role changed
+Email campaign sent
+
+==================================================
+79. FINAL DESIGN STANDARD
+==================================================
+
+The customer storefront must feel like:
+
+ANIME
++
+MOVIE
++
+FITNESS
++
+STREETWEAR
++
+CINEMATIC INTERACTION
++
+LUXURY E-COMMERCE
+
+The admin portal must feel like:
+
+SHOPIFY
++
+STRIPE
++
+SHIPSTATION
++
+EMAIL MARKETING
++
+INVENTORY SYSTEM
++
+BUSINESS ANALYTICS
+
+BUT ALL INSIDE ONE SIMPLE PLATFORM.
+
+The owner should not feel like they are using five different systems.
+
+==================================================
+80. MOST IMPORTANT PRINCIPLE
+==================================================
+
+DO NOT sacrifice business reliability for visual effects.
+
+Priority order:
+
+1. Payment reliability
+2. Order reliability
+3. Inventory accuracy
+4. Shipping reliability
+5. Admin usability
+6. Mobile usability
+7. Customer conversion
+8. Email reliability
+9. Performance
+10. Cinematic animation
+11. Decorative effects
+
+The site should be beautiful, but it must first be a REAL BUSINESS SYSTEM.
+
+==================================================
+81. COMPLETE END-TO-END TEST
+==================================================
+
+Before considering the project complete, test the entire business lifecycle.
+
+CUSTOMER SIDE:
+
+1. Visit website
+2. Intro animation
+3. Skip intro
+4. Browse products
+5. Open product
+6. Change variant
+7. Change quantity
+8. Add to cart
+9. Cart animation
+10. Checkout
+11. Enter shipping information
+12. Pay with Stripe test mode
+13. Payment success animation
+14. Order created
+15. Order confirmation email
+16. Admin sees order
+
+FULFILLMENT:
+
+17. Admin opens order
+18. Admin marks order processing
+19. Packaged email automatically sends
+20. ShipStation receives order
+21. Shipping label generated
+22. Tracking saved
+23. Shipping email automatically sends
+24. Admin sees tracking
+
+TRACKING:
+
+25. Carrier tracking update
+26. ShipStation webhook received
+27. Database updated
+28. Customer tracking page updates
+29. In-transit email sends
+30. Out-for-delivery email sends
+31. Delivered webhook
+32. Database updates
+33. Delivered email sends
+
+INVENTORY:
+
+34. Inventory automatically decreased
+35. Inventory history recorded
+36. Low-stock alert works
+37. Refund/cancellation inventory rules work
+
+ADMIN:
+
+38. Admin can add product
+39. Admin can edit product
+40. Admin can archive product
+41. Admin can add inventory
+42. Admin can view inventory history
+43. Admin can fulfill orders
+44. Admin can print labels
+45. Admin can view customers
+46. Admin can create discount
+47. Admin can edit website
+48. Admin can create email campaign
+49. Admin can view email analytics
+50. Admin can manage everything from mobile
+
+PDF:
+
+51. Upload product design PDF
+52. Analyze designs
+53. Create draft products
+54. Admin reviews products
+55. Admin edits products
+56. Admin publishes products
+
+MARKETING:
+
+57. Customer opts into marketing
+58. Admin sees subscriber
+59. Admin creates campaign
+60. Admin previews campaign
+61. Admin sends test
+62. Admin schedules campaign
+63. Campaign sends
+64. Analytics are recorded
+65. Unsubscribe works
+
+Test every failure case as well.
+
+==================================================
+82. FINAL REQUIREMENT
+==================================================
+
+Do not give me a static mockup.
+
+Do not fake integrations.
+
+Do not create buttons that don't work.
+
+Do not use placeholder functionality where actual functionality is reasonably possible.
+
+Build the actual full-stack architecture.
+
+If an API key or external credential is required, create the integration correctly and use environment variables.
+
+If an external service cannot be connected until credentials are supplied, build the complete integration layer and provide a clear setup screen/instructions rather than pretending it works.
+
+The final product should be a real scalable e-commerce platform.
+
+THE CUSTOMER GETS:
+
+A WORLD-CLASS CINEMATIC ANIME/MOVIE SHOPPING EXPERIENCE.
+
+THE OWNER GETS:
+
+A SIMPLE ALL-IN-ONE BUSINESS OPERATING SYSTEM.
+
+The final feeling should be:
+
+CUSTOMER:
+"I've never seen a lifting brand website like this."
+
+OWNER:
+"I don't need a developer to run my business."
