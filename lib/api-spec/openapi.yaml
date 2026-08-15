@@ -3,20 +3,46 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Evolve Performance e-commerce API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: collections
+    description: Product collections
+  - name: products
+    description: Products and variants
+  - name: cart
+    description: Cart and inventory reservations
+  - name: checkout
+    description: Checkout and Stripe
+  - name: orders
+    description: Order management
+  - name: tracking
+    description: Order tracking
+  - name: account
+    description: Customer account
+  - name: reviews
+    description: Product reviews
+  - name: support
+    description: Customer support
+  - name: newsletter
+    description: Newsletter subscriptions
+  - name: content
+    description: Website content management
+  - name: shipping
+    description: Shipping zones and rates
+  - name: discounts
+    description: Discount codes
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +50,1567 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Collections ──────────────────────────────────────────────────────────────
+  /collections:
+    get:
+      operationId: listCollections
+      tags: [collections]
+      summary: List all active collections
+      responses:
+        "200":
+          description: Collections list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Collection"
+
+  /collections/{slug}:
+    get:
+      operationId: getCollectionBySlug
+      tags: [collections]
+      summary: Get a collection by slug with its products
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Collection with products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Products ─────────────────────────────────────────────────────────────────
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List active products
+      parameters:
+        - name: collection
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+
+  /products/featured:
+    get:
+      operationId: listFeaturedProducts
+      tags: [products]
+      summary: List featured products for homepage
+      responses:
+        "200":
+          description: Featured products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductCard"
+
+  /products/{slug}:
+    get:
+      operationId: getProductBySlug
+      tags: [products]
+      summary: Get a product by slug with variants and images
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/{slug}/reviews:
+    get:
+      operationId: listProductReviews
+      tags: [reviews]
+      summary: List approved reviews for a product
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+    post:
+      operationId: submitReview
+      tags: [reviews]
+      summary: Submit a verified-purchase review
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Review submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "403":
+          description: No verified purchase
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Cart ─────────────────────────────────────────────────────────────────────
+  /cart:
+    get:
+      operationId: getCart
+      tags: [cart]
+      summary: Get cart by session ID
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cart contents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  /cart/items:
+    post:
+      operationId: addCartItem
+      tags: [cart]
+      summary: Add item to cart (creates inventory reservation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemInput"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "409":
+          description: Insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cart/items/{itemId}:
+    patch:
+      operationId: updateCartItem
+      tags: [cart]
+      summary: Update cart item quantity
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemUpdate"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+    delete:
+      operationId: removeCartItem
+      tags: [cart]
+      summary: Remove item from cart (releases reservation)
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  /cart/clear:
+    post:
+      operationId: clearCart
+      tags: [cart]
+      summary: Clear all items from cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClearCartInput"
+      responses:
+        "200":
+          description: Cleared cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  # ── Checkout ──────────────────────────────────────────────────────────────────
+  /checkout/session:
+    post:
+      operationId: createCheckoutSession
+      tags: [checkout]
+      summary: Create a Stripe checkout session with server-computed totals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutSessionInput"
+      responses:
+        "200":
+          description: Stripe checkout session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSessionResponse"
+        "400":
+          description: Invalid cart or discount
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /checkout/shipping-rates:
+    post:
+      operationId: queryShippingRates
+      tags: [checkout]
+      summary: Get applicable shipping rates for a destination
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShippingRateQuery"
+      responses:
+        "200":
+          description: Available shipping rates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShippingRateOption"
+
+  /checkout/validate-discount:
+    post:
+      operationId: validateDiscountCode
+      tags: [checkout]
+      summary: Validate a discount code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscountValidateInput"
+      responses:
+        "200":
+          description: Discount details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscountValidateResponse"
+        "404":
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /checkout/webhook:
+    post:
+      operationId: handleStripeWebhook
+      tags: [checkout]
+      summary: Stripe webhook endpoint (signature-verified)
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAck"
+
+  # ── Orders ────────────────────────────────────────────────────────────────────
+  /orders/lookup:
+    get:
+      operationId: lookupOrder
+      tags: [orders]
+      summary: Look up order by order number and email
+      parameters:
+        - name: orderNumber
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Tracking ──────────────────────────────────────────────────────────────────
+  /tracking/lookup:
+    get:
+      operationId: lookupTracking
+      tags: [tracking]
+      summary: Get order tracking timeline by order number and email
+      parameters:
+        - name: orderNumber
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tracking timeline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingTimeline"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Account ───────────────────────────────────────────────────────────────────
+  /account/orders:
+    get:
+      operationId: listAccountOrders
+      tags: [account]
+      summary: List orders for the authenticated customer
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderSummary"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account/profile:
+    get:
+      operationId: getAccountProfile
+      tags: [account]
+      summary: Get authenticated customer profile
+      responses:
+        "200":
+          description: Customer profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateAccountProfile
+      tags: [account]
+      summary: Update customer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerProfile"
+
+  /account/addresses:
+    get:
+      operationId: listAccountAddresses
+      tags: [account]
+      summary: List saved addresses
+      responses:
+        "200":
+          description: Saved addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Address"
+    post:
+      operationId: createAccountAddress
+      tags: [account]
+      summary: Add a saved address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressInput"
+      responses:
+        "201":
+          description: Created address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+
+  /account/addresses/{addressId}:
+    delete:
+      operationId: deleteAccountAddress
+      tags: [account]
+      summary: Delete a saved address
+      parameters:
+        - name: addressId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /account/returns:
+    get:
+      operationId: listAccountReturns
+      tags: [account]
+      summary: List return requests for the authenticated customer
+      responses:
+        "200":
+          description: Return requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReturnRequest"
+    post:
+      operationId: submitReturnRequest
+      tags: [account]
+      summary: Submit a return request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReturnRequestInput"
+      responses:
+        "201":
+          description: Return request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReturnRequest"
+
+  # ── Support ───────────────────────────────────────────────────────────────────
+  /support/requests:
+    post:
+      operationId: submitSupportRequest
+      tags: [support]
+      summary: Submit a customer support request (auto-attaches order context)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportRequestInput"
+      responses:
+        "201":
+          description: Support request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportRequestResponse"
+
+  # ── Newsletter ────────────────────────────────────────────────────────────────
+  /newsletter/subscribe:
+    post:
+      operationId: subscribeNewsletter
+      tags: [newsletter]
+      summary: Subscribe to newsletter (records consent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsletterSubscribeInput"
+      responses:
+        "200":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterSubscribeResponse"
+
+  /newsletter/unsubscribe:
+    post:
+      operationId: unsubscribeNewsletter
+      tags: [newsletter]
+      summary: Unsubscribe from newsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsletterUnsubscribeInput"
+      responses:
+        "200":
+          description: Unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsletterUnsubscribeResponse"
+
+  # ── Content ───────────────────────────────────────────────────────────────────
+  /content/homepage:
+    get:
+      operationId: getHomepageContent
+      tags: [content]
+      summary: Get published homepage content and section order
+      responses:
+        "200":
+          description: Homepage content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomepageContent"
+
+  /content/page/{pageKey}:
+    get:
+      operationId: getPageContent
+      tags: [content]
+      summary: Get a content page by key (story, about, faq, privacy, terms, shipping-policy, return-policy, cookie-policy, accessibility)
+      parameters:
+        - name: pageKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageContent"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /content/settings:
+    get:
+      operationId: getSiteSettings
+      tags: [content]
+      summary: Get public site settings (name, logo, social links, announcement)
+      responses:
+        "200":
+          description: Site settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+
+  # ── Shipping ──────────────────────────────────────────────────────────────────
+  /shipping/zones:
+    get:
+      operationId: listShippingZones
+      tags: [shipping]
+      summary: List all shipping zones with rates
+      responses:
+        "200":
+          description: Shipping zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShippingZone"
+
+  # ── Discounts ─────────────────────────────────────────────────────────────────
+  /discounts/{code}:
+    get:
+      operationId: getDiscountByCode
+      tags: [discounts]
+      summary: Look up a discount code (public)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Discount
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+# ── Schemas ────────────────────────────────────────────────────────────────────
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    WebhookAck:
+      type: object
+      required: [received]
+      properties:
+        received:
+          type: boolean
+
+    # ── Collection ───────────────────────────────────────────────────────────
+    Collection:
+      type: object
+      required: [id, slug, name, description, imageUrl, productCount]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        productCount:
+          type: integer
+
+    CollectionDetail:
+      type: object
+      required: [id, slug, name, description, imageUrl, products]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductCard"
+
+    # ── Product ──────────────────────────────────────────────────────────────
+    ProductCard:
+      type: object
+      required: [id, slug, name, priceMin, priceMax, primaryImageUrl, collectionName, status, stockStatus]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        theme:
+          type: ["string", "null"]
+        priceMin:
+          type: integer
+        priceMax:
+          type: integer
+        primaryImageUrl:
+          type: ["string", "null"]
+        collectionName:
+          type: ["string", "null"]
+        status:
+          type: string
+        stockStatus:
+          type: string
+        averageRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+
+    ProductListResponse:
+      type: object
+      required: [products, total]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductCard"
+        total:
+          type: integer
+
+    ProductDetail:
+      type: object
+      required: [id, slug, name, description, variants, images, collections]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        theme:
+          type: ["string", "null"]
+        description:
+          type: string
+        materials:
+          type: ["string", "null"]
+        benefits:
+          type: ["string", "null"]
+        shippingInfo:
+          type: ["string", "null"]
+        returnsInfo:
+          type: ["string", "null"]
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductVariant"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImage"
+        collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Collection"
+        averageRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+        weightGrams:
+          type: ["integer", "null"]
+        dimensionsCm:
+          type: ["string", "null"]
+        hsCode:
+          type: ["string", "null"]
+        countryOfOrigin:
+          type: ["string", "null"]
+
+    ProductVariant:
+      type: object
+      required: [id, sku, priceInCents, stockQuantity, availableQuantity]
+      properties:
+        id:
+          type: integer
+        sku:
+          type: string
+        size:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        priceInCents:
+          type: integer
+        compareAtPriceInCents:
+          type: ["integer", "null"]
+        stockQuantity:
+          type: integer
+        availableQuantity:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+
+    ProductImage:
+      type: object
+      required: [id, url, altText, position]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        altText:
+          type: ["string", "null"]
+        position:
+          type: integer
+
+    # ── Cart ─────────────────────────────────────────────────────────────────
+    CartItemInput:
+      type: object
+      required: [sessionId, variantId, quantity]
+      properties:
+        sessionId:
+          type: string
+        variantId:
+          type: integer
+        quantity:
+          type: integer
+        clerkUserId:
+          type: ["string", "null"]
+
+    CartItemUpdate:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+        sessionId:
+          type: string
+
+    ClearCartInput:
+      type: object
+      required: [sessionId]
+      properties:
+        sessionId:
+          type: string
+
+    Cart:
+      type: object
+      required: [sessionId, items, subtotalInCents, itemCount]
+      properties:
+        sessionId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        subtotalInCents:
+          type: integer
+        itemCount:
+          type: integer
+
+    CartItem:
+      type: object
+      required: [id, variantId, productId, productSlug, productName, variantSku, priceInCents, quantity]
+      properties:
+        id:
+          type: string
+        variantId:
+          type: integer
+        productId:
+          type: integer
+        productSlug:
+          type: string
+        productName:
+          type: string
+        variantSku:
+          type: string
+        size:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        priceInCents:
+          type: integer
+        quantity:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+
+    # ── Checkout ─────────────────────────────────────────────────────────────
+    CheckoutSessionInput:
+      type: object
+      required: [sessionId, successUrl, cancelUrl]
+      properties:
+        sessionId:
+          type: string
+        clerkUserId:
+          type: ["string", "null"]
+        customerEmail:
+          type: ["string", "null"]
+        discountCode:
+          type: ["string", "null"]
+        shippingZoneRateId:
+          type: ["integer", "null"]
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+
+    CheckoutSessionResponse:
+      type: object
+      required: [checkoutUrl, subtotalInCents, shippingInCents, taxInCents, totalInCents]
+      properties:
+        checkoutUrl:
+          type: string
+        subtotalInCents:
+          type: integer
+        shippingInCents:
+          type: integer
+        taxInCents:
+          type: integer
+        discountInCents:
+          type: integer
+        totalInCents:
+          type: integer
+
+    ShippingRateQuery:
+      type: object
+      required: [countryCode]
+      properties:
+        countryCode:
+          type: string
+        sessionId:
+          type: string
+
+    ShippingRateOption:
+      type: object
+      required: [id, name, description, priceInCents, estimatedDays]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        priceInCents:
+          type: integer
+        estimatedDays:
+          type: string
+
+    DiscountValidateInput:
+      type: object
+      required: [code, sessionId]
+      properties:
+        code:
+          type: string
+        sessionId:
+          type: string
+
+    DiscountValidateResponse:
+      type: object
+      required: [valid, code]
+      properties:
+        valid:
+          type: boolean
+        code:
+          type: string
+        discountType:
+          type: ["string", "null"]
+        value:
+          type: ["integer", "null"]
+        discountInCents:
+          type: ["integer", "null"]
+        error:
+          type: ["string", "null"]
+
+    # ── Orders ────────────────────────────────────────────────────────────────
+    OrderSummary:
+      type: object
+      required: [id, orderNumber, status, totalInCents, currency, itemCount, createdAt]
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        status:
+          type: string
+        totalInCents:
+          type: integer
+        currency:
+          type: string
+        itemCount:
+          type: integer
+        trackingNumber:
+          type: ["string", "null"]
+        carrier:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    OrderDetail:
+      type: object
+      required: [id, orderNumber, status, items, subtotalInCents, shippingInCents, taxInCents, discountInCents, totalInCents, currency, shippingAddress, createdAt]
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        status:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        subtotalInCents:
+          type: integer
+        shippingInCents:
+          type: integer
+        taxInCents:
+          type: integer
+        discountInCents:
+          type: integer
+        totalInCents:
+          type: integer
+        currency:
+          type: string
+        shippingAddress:
+          $ref: "#/components/schemas/AddressSnapshot"
+        trackingNumber:
+          type: ["string", "null"]
+        carrier:
+          type: ["string", "null"]
+        trackingUrl:
+          type: ["string", "null"]
+        estimatedDelivery:
+          type: ["string", "null"]
+        stripeRiskLevel:
+          type: ["string", "null"]
+        requiresManualReview:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    OrderItem:
+      type: object
+      required: [id, productName, variantSku, quantity, unitPriceInCents, totalPriceInCents]
+      properties:
+        id:
+          type: integer
+        productName:
+          type: string
+        productSlug:
+          type: ["string", "null"]
+        variantSku:
+          type: string
+        size:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        unitPriceInCents:
+          type: integer
+        totalPriceInCents:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+
+    # ── Tracking ─────────────────────────────────────────────────────────────
+    TrackingTimeline:
+      type: object
+      required: [orderNumber, status, events]
+      properties:
+        orderNumber:
+          type: string
+        status:
+          type: string
+        trackingNumber:
+          type: ["string", "null"]
+        carrier:
+          type: ["string", "null"]
+        trackingUrl:
+          type: ["string", "null"]
+        estimatedDelivery:
+          type: ["string", "null"]
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackingEvent"
+
+    TrackingEvent:
+      type: object
+      required: [status, label, description, isCompleted]
+      properties:
+        status:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: ["string", "null"]
+        isCompleted:
+          type: boolean
+        isCurrent:
+          type: boolean
+
+    # ── Account ───────────────────────────────────────────────────────────────
+    CustomerProfile:
+      type: object
+      required: [id, email, marketingConsent]
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        marketingConsent:
+          type: boolean
+        createdAt:
+          type: string
+
+    CustomerProfileUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        marketingConsent:
+          type: boolean
+
+    Address:
+      type: object
+      required: [id, name, line1, city, countryCode, isDefault]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: ["string", "null"]
+        city:
+          type: string
+        state:
+          type: ["string", "null"]
+        postalCode:
+          type: ["string", "null"]
+        countryCode:
+          type: string
+        isDefault:
+          type: boolean
+
+    AddressInput:
+      type: object
+      required: [name, line1, city, countryCode]
+      properties:
+        name:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        countryCode:
+          type: string
+        isDefault:
+          type: boolean
+
+    AddressSnapshot:
+      type: object
+      required: [name, line1, city, countryCode]
+      properties:
+        name:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: ["string", "null"]
+        city:
+          type: string
+        state:
+          type: ["string", "null"]
+        postalCode:
+          type: ["string", "null"]
+        countryCode:
+          type: string
+
+    ReturnRequest:
+      type: object
+      required: [id, orderNumber, status, reason, createdAt]
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        status:
+          type: string
+        reason:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReturnLineItem"
+        refundAmountInCents:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    ReturnLineItem:
+      type: object
+      required: [orderItemId, quantity, reason]
+      properties:
+        orderItemId:
+          type: integer
+        quantity:
+          type: integer
+        reason:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    ReturnRequestInput:
+      type: object
+      required: [orderId, items, reason]
+      properties:
+        orderId:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReturnLineItem"
+        reason:
+          type: string
+        preferExchange:
+          type: boolean
+
+    # ── Reviews ───────────────────────────────────────────────────────────────
+    Review:
+      type: object
+      required: [id, rating, title, body, reviewerName, isVerified, createdAt]
+      properties:
+        id:
+          type: integer
+        rating:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        reviewerName:
+          type: string
+        isVerified:
+          type: boolean
+        createdAt:
+          type: string
+
+    ReviewInput:
+      type: object
+      required: [rating, title, body, orderId]
+      properties:
+        rating:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        orderId:
+          type: integer
+
+    # ── Support ───────────────────────────────────────────────────────────────
+    SupportRequestInput:
+      type: object
+      required: [email, subject, message]
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        subject:
+          type: string
+        message:
+          type: string
+        orderNumber:
+          type: ["string", "null"]
+        clerkUserId:
+          type: ["string", "null"]
+
+    SupportRequestResponse:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+
+    # ── Newsletter ────────────────────────────────────────────────────────────
+    NewsletterSubscribeInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        firstName:
+          type: string
+        source:
+          type: string
+
+    NewsletterSubscribeResponse:
+      type: object
+      required: [subscribed]
+      properties:
+        subscribed:
+          type: boolean
+
+    NewsletterUnsubscribeInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        token:
+          type: ["string", "null"]
+
+    NewsletterUnsubscribeResponse:
+      type: object
+      required: [unsubscribed]
+      properties:
+        unsubscribed:
+          type: boolean
+
+    # ── Content ───────────────────────────────────────────────────────────────
+    HomepageContent:
+      type: object
+      required: [sections, heroHeadline, heroSubtext]
+      properties:
+        heroHeadline:
+          type: string
+        heroSubtext:
+          type: string
+        heroCtaPrimary:
+          type: string
+        heroCtaSecondary:
+          type: string
+        announcementBanner:
+          type: ["string", "null"]
+        announcementActive:
+          type: boolean
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/HomepageSection"
+
+    HomepageSection:
+      type: object
+      required: [key, sectionType, position, active]
+      properties:
+        key:
+          type: string
+        sectionType:
+          type: string
+        position:
+          type: integer
+        active:
+          type: boolean
+        title:
+          type: ["string", "null"]
+        subtitle:
+          type: ["string", "null"]
+
+    PageContent:
+      type: object
+      required: [key, title, body, updatedAt]
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        updatedAt:
+          type: string
+
+    SiteSettings:
+      type: object
+      required: [businessName, currency, supportEmail]
+      properties:
+        businessName:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        faviconUrl:
+          type: ["string", "null"]
+        supportEmail:
+          type: string
+        currency:
+          type: string
+        defaultCountry:
+          type: string
+        socialInstagram:
+          type: ["string", "null"]
+        socialTiktok:
+          type: ["string", "null"]
+        socialYoutube:
+          type: ["string", "null"]
+        announcementBanner:
+          type: ["string", "null"]
+
+    # ── Shipping ──────────────────────────────────────────────────────────────
+    ShippingZone:
+      type: object
+      required: [id, name, countries, rates]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        rates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShippingRate"
+
+    ShippingRate:
+      type: object
+      required: [id, name, rateType, priceInCents, estimatedDays]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        rateType:
+          type: string
+        priceInCents:
+          type: integer
+        minimumOrderInCents:
+          type: ["integer", "null"]
+        estimatedDays:
+          type: string
+
+    # ── Discounts ─────────────────────────────────────────────────────────────
+    Discount:
+      type: object
+      required: [code, discountType, value, active]
+      properties:
+        code:
+          type: string
+        discountType:
+          type: string
+        value:
+          type: integer
+        active:
+          type: boolean
+        minimumOrderInCents:
+          type: ["integer", "null"]
+        expiresAt:
+          type: ["string", "null"]

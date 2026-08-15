@@ -1,10 +1,19 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import { clerkMiddleware } from "@clerk/express";
+import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import webhookRouter from "./routes/webhook";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+// ── Clerk proxy (must be first, before body parsers) ─────────────────────────
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+// ── Stripe webhook (raw body, before express.json) ───────────────────────────
+app.use("/api/checkout/webhook", express.raw({ type: "application/json" }), webhookRouter);
 
 app.use(
   pinoHttp({
@@ -25,9 +34,13 @@ app.use(
     },
   }),
 );
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ── Clerk auth middleware (attaches auth() to every request) ──────────────────
+app.use(clerkMiddleware());
 
 app.use("/api", router);
 
