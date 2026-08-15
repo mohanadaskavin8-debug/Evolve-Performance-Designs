@@ -1,0 +1,114 @@
+====================================================
+BUSINESS OPERATIONS
+====================================================
+
+The platform must support real-world business operations beyond simply taking payments.
+
+TAXES
+Support international tax architecture.
+Do not hardcode tax rates.
+Support Stripe Tax or an equivalent tax provider where appropriate.
+
+CUSTOMS
+Products must support:
+- HS/tariff code
+- country of origin
+- customs description
+- customs value
+- weight
+- dimensions
+
+RETURNS
+Implement a complete return workflow:
+customer request
+→ admin review
+→ approved/denied
+→ return received
+→ refund/exchange
+→ inventory adjustment
+
+Support:
+- partial returns
+- exchanges
+- damaged products
+- wrong products
+- refund status
+
+SHIPPING RATES
+Admin-configurable shipping zones and rates.
+Support:
+- free shipping
+- flat rate
+- expedited shipping
+- country-specific shipping
+- carrier-calculated rates where supported
+
+INVENTORY RESERVATIONS
+Prevent overselling during concurrent checkout.
+
+Use inventory reservations with expiration.
+
+AVAILABLE
+→ RESERVED
+→ SOLD
+
+Expired reservations return to AVAILABLE.
+
+FRAUD
+Integrate with Stripe's fraud/risk capabilities.
+Flag suspicious orders for manual review.
+
+Do not automatically fulfill orders that require manual review.
+
+REVIEWS
+Support verified-purchase reviews.
+
+CUSTOMER SUPPORT
+Allow customers to contact support from an order.
+Automatically attach relevant order and tracking information.
+
+REPORTING
+Add:
+- gross revenue
+- net revenue
+- refunds
+- discounts
+- shipping revenue
+- taxes
+- average order value
+- conversion rate
+- repeat purchase rate
+
+DATA EXPORT
+Admin can export:
+- orders
+- customers
+- inventory
+- products
+- sales
+
+OBSERVABILITY
+Implement application error monitoring and integration health monitoring.
+
+Show admin connection/status indicators for:
+- PostgreSQL
+- Stripe
+- Clerk
+- Resend
+- ShipStation
+
+BACKUPS
+Implement/enable automated database backup strategy and document restoration procedure.
+
+LEGAL
+Create configurable pages for:
+- Privacy Policy
+- Terms of Service
+- Shipping Policy
+- Return/Refund Policy
+- Cookie Policy
+- Accessibility
+
+====================================================
+END BUSINESS OPERATIONS
+====================================================
