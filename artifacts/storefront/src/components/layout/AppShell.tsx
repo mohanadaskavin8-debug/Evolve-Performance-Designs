@@ -231,6 +231,7 @@ function Footer() {
         <div className="flex gap-8 mt-6 md:mt-0">
           <Link href="/pages/privacy" className="hover:text-white transition-colors">Privacy</Link>
           <Link href="/pages/terms" className="hover:text-white transition-colors">Terms</Link>
+           <a href="/admin" className="hover:text-white transition-colors">Admin</a>
         </div>
       </div>
     </footer>
