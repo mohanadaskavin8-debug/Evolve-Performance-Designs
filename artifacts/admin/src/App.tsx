@@ -169,8 +169,16 @@ function App() {
     return <div className="p-8 text-destructive font-mono">Missing VITE_CLERK_PUBLISHABLE_KEY</div>;
   }
 
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
   return (
-    <ClerkProvider publishableKey={CLERK_KEY}>
+    <ClerkProvider
+      publishableKey={CLERK_KEY}
+      signInUrl={`${base}/sign-in`}
+      signUpUrl={`${base}/sign-up`}
+      signInFallbackRedirectUrl={`${base}/dashboard`}
+      signUpFallbackRedirectUrl={`${base}/dashboard`}
+    >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
