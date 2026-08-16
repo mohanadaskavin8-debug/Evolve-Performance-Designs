@@ -1,4 +1,6 @@
 - [Drizzle pv-alias SQL bug](drizzle-pv-alias.md) — Drizzle innerJoin uses full table name not alias; raw GROUP BY aggregations must use pool.query instead.
+- [Drizzle ANY() array bug](drizzle-any-inarray.md) — sql`= ANY(${jsArray})` builds a row constructor and fails at runtime; use inArray(); raw pool.query with array param is fine.
+- [Connectors proxy pattern](connectors-proxy-fetch.md) — one choke-point fetch helper per connector module: fresh ReplitConnectors per call, single Response cast, 401/403 + proxy-404 "no connection" body → not-connected.
 - [Clerk v6 breaking changes](clerk-v6.md) — afterSignInUrl/afterSignUpUrl removed; proxyUrl removed; use useUser() not SignedIn/SignedOut components.
 - [DB dist must be built](db-dist-build.md) — lib/db must run tsc to emit dist/*.d.ts before api-server typecheck can see schema types via project references.
 - [Express noImplicitReturns](express-ts-config.md) — api-server tsconfig must override noImplicitReturns:false; Express handlers return void but `return res.json()` triggers TS7030.

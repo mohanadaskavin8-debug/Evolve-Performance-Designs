@@ -31,6 +31,8 @@ import type {
   AdminDiscount,
   AdminDiscountInput,
   AdminDiscountUpdate,
+  AdminFulfillmentPushResult,
+  AdminFulfillmentStatus,
   AdminGetSalesReportParams,
   AdminHomepageSection,
   AdminHomepageSectionsUpdate,
@@ -46,6 +48,7 @@ import type {
   AdminListProductsParams,
   AdminListReturnsParams,
   AdminListReviewsParams,
+  AdminListShipmentsParams,
   AdminListSupportParams,
   AdminMeResponse,
   AdminOrderActionInput,
@@ -64,6 +67,7 @@ import type {
   AdminReviewActionInput,
   AdminReviewsListResponse,
   AdminSalesReport,
+  AdminShipmentListResponse,
   AdminShippingRate,
   AdminShippingRateInput,
   AdminShippingRateUpdate,
@@ -2723,6 +2727,77 @@ export function useListShippingZones<TData = Awaited<ReturnType<typeof listShipp
 
 
 
+
+export const getHandleShipStationWebhookUrl = () => {
+
+
+
+
+  return `/api/shipping/shipstation/webhook`
+}
+
+/**
+ * @summary ShipStation webhook receiver (payload treated as an untrusted poll hint)
+ */
+export const handleShipStationWebhook = async ( options?: Parameters<typeof customFetch>[1]): Promise<WebhookAck> => {
+
+  return customFetch<WebhookAck>(getHandleShipStationWebhookUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getHandleShipStationWebhookMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof handleShipStationWebhook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof handleShipStationWebhook>>, TError,void, TContext> => {
+
+const mutationKey = ['handleShipStationWebhook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof handleShipStationWebhook>>, void> = () => {
+
+
+          return  handleShipStationWebhook(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type HandleShipStationWebhookMutationResult = NonNullable<Awaited<ReturnType<typeof handleShipStationWebhook>>>
+
+    export type HandleShipStationWebhookMutationError = ErrorType<unknown>
+
+    /**
+ * @summary ShipStation webhook receiver (payload treated as an untrusted poll hint)
+ */
+export const useHandleShipStationWebhook = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof handleShipStationWebhook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof handleShipStationWebhook>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getHandleShipStationWebhookMutationOptions(options));
+    }
 
 export const getGetDiscountByCodeUrl = (code: string,) => {
 
@@ -6802,6 +6877,238 @@ export function useAdminGetSalesReport<TData = Awaited<ReturnType<typeof adminGe
 
 
 
+
+export const getAdminGetFulfillmentStatusUrl = () => {
+
+
+
+
+  return `/api/admin/fulfillment/status`
+}
+
+/**
+ * @summary ShipStation connection health and fulfillment queue counts
+ */
+export const adminGetFulfillmentStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminFulfillmentStatus> => {
+
+  return customFetch<AdminFulfillmentStatus>(getAdminGetFulfillmentStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetFulfillmentStatusQueryKey = () => {
+    return [
+    `/api/admin/fulfillment/status`
+    ] as const;
+    }
+
+
+export const getAdminGetFulfillmentStatusQueryOptions = <TData = Awaited<ReturnType<typeof adminGetFulfillmentStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetFulfillmentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetFulfillmentStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetFulfillmentStatus>>> = ({ signal }) => adminGetFulfillmentStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetFulfillmentStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetFulfillmentStatusQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetFulfillmentStatus>>>
+export type AdminGetFulfillmentStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary ShipStation connection health and fulfillment queue counts
+ */
+
+export function useAdminGetFulfillmentStatus<TData = Awaited<ReturnType<typeof adminGetFulfillmentStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetFulfillmentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetFulfillmentStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminListShipmentsUrl = (params?: AdminListShipmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/shipments?${stringifiedParams}` : `/api/admin/shipments`
+}
+
+/**
+ * @summary List shipments with order context
+ */
+export const adminListShipments = async (params?: AdminListShipmentsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminShipmentListResponse> => {
+
+  return customFetch<AdminShipmentListResponse>(getAdminListShipmentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListShipmentsQueryKey = (params?: AdminListShipmentsParams,) => {
+    return [
+    `/api/admin/shipments`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListShipmentsQueryOptions = <TData = Awaited<ReturnType<typeof adminListShipments>>, TError = ErrorType<unknown>>(params?: AdminListShipmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListShipments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListShipmentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListShipments>>> = ({ signal }) => adminListShipments(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListShipments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListShipmentsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListShipments>>>
+export type AdminListShipmentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List shipments with order context
+ */
+
+export function useAdminListShipments<TData = Awaited<ReturnType<typeof adminListShipments>>, TError = ErrorType<unknown>>(
+ params?: AdminListShipmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListShipments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListShipmentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminPushOrderFulfillmentUrl = (orderId: number,) => {
+
+
+
+
+  return `/api/admin/orders/${orderId}/fulfillment/push`
+}
+
+/**
+ * @summary Push or retry pushing an order to ShipStation
+ */
+export const adminPushOrderFulfillment = async (orderId: number, options?: Parameters<typeof customFetch>[1]): Promise<AdminFulfillmentPushResult> => {
+
+  return customFetch<AdminFulfillmentPushResult>(getAdminPushOrderFulfillmentUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminPushOrderFulfillmentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPushOrderFulfillment>>, TError,{orderId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPushOrderFulfillment>>, TError,{orderId: number}, TContext> => {
+
+const mutationKey = ['adminPushOrderFulfillment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPushOrderFulfillment>>, {orderId: number}> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  adminPushOrderFulfillment(orderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPushOrderFulfillmentMutationResult = NonNullable<Awaited<ReturnType<typeof adminPushOrderFulfillment>>>
+
+    export type AdminPushOrderFulfillmentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Push or retry pushing an order to ShipStation
+ */
+export const useAdminPushOrderFulfillment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPushOrderFulfillment>>, TError,{orderId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPushOrderFulfillment>>,
+        TError,
+        {orderId: number},
+        TContext
+      > => {
+      return useMutation(getAdminPushOrderFulfillmentMutationOptions(options));
+    }
 
 export const getAdminGetSystemStatusUrl = () => {
 

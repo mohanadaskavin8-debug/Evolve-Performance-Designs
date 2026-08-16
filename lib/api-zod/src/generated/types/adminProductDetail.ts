@@ -35,6 +35,10 @@ export interface AdminProductDetail {
   hsCode?: string | null;
   /** @nullable */
   countryOfOrigin?: string | null;
+  /** @nullable */
+  customsDescription?: string | null;
+  /** @nullable */
+  customsValueCents?: number | null;
   variants: AdminProductVariant[];
   images: ProductImage[];
   collections: Collection[];

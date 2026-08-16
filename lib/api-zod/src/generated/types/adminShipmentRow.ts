@@ -5,16 +5,18 @@
  * Evolve Performance e-commerce API
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminShipmentEvent } from './adminShipmentEvent';
 
-export interface AdminShipment {
+export interface AdminShipmentRow {
   id: number;
   orderId: number;
+  orderNumber: string;
+  /** @nullable */
+  customerEmail?: string | null;
+  /** @nullable */
+  destinationCountry?: string | null;
   status: string;
   /** @nullable */
   carrier?: string | null;
-  /** @nullable */
-  carrierCode?: string | null;
   /** @nullable */
   serviceCode?: string | null;
   /** @nullable */
@@ -23,19 +25,12 @@ export interface AdminShipment {
   trackingUrl?: string | null;
   /** @nullable */
   labelUrl?: string | null;
-  /** @nullable */
-  shipstationShipmentId?: string | null;
-  /** @nullable */
-  estimatedDelivery?: string | null;
-  /** @nullable */
-  shippedAt?: string | null;
-  /** @nullable */
-  deliveredAt?: string | null;
   pushAttempts: number;
   /** @nullable */
   lastPushError?: string | null;
   /** @nullable */
-  lastPushAt?: string | null;
-  events?: AdminShipmentEvent[];
+  shippedAt?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
   createdAt: string;
 }

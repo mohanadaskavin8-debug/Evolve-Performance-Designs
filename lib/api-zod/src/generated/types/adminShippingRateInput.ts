@@ -15,4 +15,8 @@ export interface AdminShippingRateInput {
   minimumOrderInCents?: number;
   estimatedDays: string;
   active?: boolean;
+  /** @nullable */
+  carrierCode?: string | null;
+  /** @nullable */
+  serviceCode?: string | null;
 }

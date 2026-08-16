@@ -372,6 +372,9 @@ importers:
       '@clerk/express':
         specifier: ^2.1.56
         version: 2.1.56(express@5.2.1)
+      '@replit/connectors-sdk':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod

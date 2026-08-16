@@ -360,6 +360,8 @@ export const CreateCheckoutSessionBody = zod.object({
   "customerEmail": zod.string().nullish(),
   "discountCode": zod.string().nullish(),
   "shippingZoneRateId": zod.number().int().nullish(),
+  "countryCode": zod.string().nullish().describe('Destination country. Required to check out; the session pins Stripe address collection to it and validates the selected rate against its zone.'),
+  "postalCode": zod.string().nullish().describe('Destination postal\/ZIP code, used to live-quote carrier-calculated rates with a real destination'),
   "successUrl": zod.string(),
   "cancelUrl": zod.string()
 })
@@ -379,7 +381,8 @@ export const CreateCheckoutSessionResponse = zod.object({
  */
 export const QueryShippingRatesBody = zod.object({
   "countryCode": zod.string(),
-  "sessionId": zod.string().optional()
+  "sessionId": zod.string().optional(),
+  "postalCode": zod.string().nullish().describe('Destination postal\/ZIP code; enables live carrier quotes (otherwise stored fallback prices are shown)')
 })
 
 export const QueryShippingRatesResponseItem = zod.object({
@@ -487,6 +490,7 @@ export const LookupTrackingResponse = zod.object({
   "status": zod.string(),
   "label": zod.string(),
   "description": zod.string(),
+  "location": zod.string().nullish(),
   "timestamp": zod.string().nullish(),
   "isCompleted": zod.boolean(),
   "isCurrent": zod.boolean().optional()
@@ -780,6 +784,14 @@ export const ListShippingZonesResponse = zod.array(ListShippingZonesResponseItem
 
 
 /**
+ * @summary ShipStation webhook receiver (payload treated as an untrusted poll hint)
+ */
+export const HandleShipStationWebhookResponse = zod.object({
+  "received": zod.boolean()
+})
+
+
+/**
  * @summary Look up a discount code (public)
  */
 export const GetDiscountByCodeParams = zod.object({
@@ -1037,12 +1049,27 @@ export const AdminGetOrderResponse = zod.object({
   "shipments": zod.array(zod.object({
   "id": zod.number().int(),
   "orderId": zod.number().int(),
+  "status": zod.string(),
   "carrier": zod.string().nullish(),
+  "carrierCode": zod.string().nullish(),
+  "serviceCode": zod.string().nullish(),
   "trackingNumber": zod.string().nullish(),
   "trackingUrl": zod.string().nullish(),
+  "labelUrl": zod.string().nullish(),
+  "shipstationShipmentId": zod.string().nullish(),
   "estimatedDelivery": zod.string().nullish(),
   "shippedAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
+  "pushAttempts": zod.number().int(),
+  "lastPushError": zod.string().nullish(),
+  "lastPushAt": zod.string().nullish(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "eventType": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "occurredAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })).optional(),
   "createdAt": zod.string(),
@@ -1121,12 +1148,27 @@ export const AdminOrderActionResponse = zod.object({
   "shipments": zod.array(zod.object({
   "id": zod.number().int(),
   "orderId": zod.number().int(),
+  "status": zod.string(),
   "carrier": zod.string().nullish(),
+  "carrierCode": zod.string().nullish(),
+  "serviceCode": zod.string().nullish(),
   "trackingNumber": zod.string().nullish(),
   "trackingUrl": zod.string().nullish(),
+  "labelUrl": zod.string().nullish(),
+  "shipstationShipmentId": zod.string().nullish(),
   "estimatedDelivery": zod.string().nullish(),
   "shippedAt": zod.string().nullish(),
   "deliveredAt": zod.string().nullish(),
+  "pushAttempts": zod.number().int(),
+  "lastPushError": zod.string().nullish(),
+  "lastPushAt": zod.string().nullish(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "eventType": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "occurredAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })).optional(),
   "createdAt": zod.string(),
@@ -1281,6 +1323,8 @@ export const AdminCreateProductBody = zod.object({
   "dimensionsCm": zod.string().optional(),
   "hsCode": zod.string().optional(),
   "countryOfOrigin": zod.string().optional(),
+  "customsDescription": zod.string().optional(),
+  "customsValueCents": zod.number().int().optional(),
   "collectionIds": zod.array(zod.number().int()).optional()
 })
 
@@ -1301,6 +1345,8 @@ export const AdminCreateProductResponse = zod.object({
   "dimensionsCm": zod.string().nullish(),
   "hsCode": zod.string().nullish(),
   "countryOfOrigin": zod.string().nullish(),
+  "customsDescription": zod.string().nullish(),
+  "customsValueCents": zod.number().int().nullish(),
   "variants": zod.array(zod.object({
   "id": zod.number().int(),
   "sku": zod.string(),
@@ -1358,6 +1404,8 @@ export const AdminGetProductResponse = zod.object({
   "dimensionsCm": zod.string().nullish(),
   "hsCode": zod.string().nullish(),
   "countryOfOrigin": zod.string().nullish(),
+  "customsDescription": zod.string().nullish(),
+  "customsValueCents": zod.number().int().nullish(),
   "variants": zod.array(zod.object({
   "id": zod.number().int(),
   "sku": zod.string(),
@@ -1414,6 +1462,8 @@ export const AdminUpdateProductBody = zod.object({
   "dimensionsCm": zod.string().optional(),
   "hsCode": zod.string().optional(),
   "countryOfOrigin": zod.string().optional(),
+  "customsDescription": zod.string().optional(),
+  "customsValueCents": zod.number().int().optional(),
   "collectionIds": zod.array(zod.number().int()).optional()
 })
 
@@ -1434,6 +1484,8 @@ export const AdminUpdateProductResponse = zod.object({
   "dimensionsCm": zod.string().nullish(),
   "hsCode": zod.string().nullish(),
   "countryOfOrigin": zod.string().nullish(),
+  "customsDescription": zod.string().nullish(),
+  "customsValueCents": zod.number().int().nullish(),
   "variants": zod.array(zod.object({
   "id": zod.number().int(),
   "sku": zod.string(),
@@ -1495,6 +1547,8 @@ export const AdminProductActionResponse = zod.object({
   "dimensionsCm": zod.string().nullish(),
   "hsCode": zod.string().nullish(),
   "countryOfOrigin": zod.string().nullish(),
+  "customsDescription": zod.string().nullish(),
+  "customsValueCents": zod.number().int().nullish(),
   "variants": zod.array(zod.object({
   "id": zod.number().int(),
   "sku": zod.string(),
@@ -1984,7 +2038,9 @@ export const AdminCreateShippingRateBody = zod.object({
   "priceInCents": zod.number().int(),
   "minimumOrderInCents": zod.number().int().optional(),
   "estimatedDays": zod.string(),
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "carrierCode": zod.string().nullish(),
+  "serviceCode": zod.string().nullish()
 })
 
 export const AdminCreateShippingRateResponse = zod.object({
@@ -2014,7 +2070,9 @@ export const AdminUpdateShippingRateBody = zod.object({
   "priceInCents": zod.number().int().optional(),
   "minimumOrderInCents": zod.number().int().optional(),
   "estimatedDays": zod.string().optional(),
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "carrierCode": zod.string().nullish(),
+  "serviceCode": zod.string().nullish()
 })
 
 export const AdminUpdateShippingRateResponse = zod.object({
@@ -2367,6 +2425,94 @@ export const AdminGetSalesReportResponse = zod.object({
   "revenueInCents": zod.number().int(),
   "orderCount": zod.number().int()
 }))
+})
+
+
+/**
+ * @summary ShipStation connection health and fulfillment queue counts
+ */
+export const AdminGetFulfillmentStatusResponse = zod.object({
+  "connected": zod.boolean(),
+  "healthy": zod.boolean(),
+  "testMode": zod.boolean(),
+  "message": zod.string().nullish(),
+  "carrierCount": zod.number().int().nullish(),
+  "pendingPushes": zod.number().int(),
+  "failedPushes": zod.number().int(),
+  "activeShipments": zod.number().int(),
+  "deliveredLast30Days": zod.number().int()
+})
+
+
+/**
+ * @summary List shipments with order context
+ */
+export const AdminListShipmentsQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().int().optional(),
+  "offset": zod.coerce.number().int().optional()
+})
+
+export const AdminListShipmentsResponse = zod.object({
+  "shipments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "orderId": zod.number().int(),
+  "orderNumber": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "destinationCountry": zod.string().nullish(),
+  "status": zod.string(),
+  "carrier": zod.string().nullish(),
+  "serviceCode": zod.string().nullish(),
+  "trackingNumber": zod.string().nullish(),
+  "trackingUrl": zod.string().nullish(),
+  "labelUrl": zod.string().nullish(),
+  "pushAttempts": zod.number().int(),
+  "lastPushError": zod.string().nullish(),
+  "shippedAt": zod.string().nullish(),
+  "deliveredAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "total": zod.number().int()
+})
+
+
+/**
+ * @summary Push or retry pushing an order to ShipStation
+ */
+export const AdminPushOrderFulfillmentParams = zod.object({
+  "orderId": zod.coerce.number().int()
+})
+
+export const AdminPushOrderFulfillmentResponse = zod.object({
+  "pushed": zod.boolean(),
+  "error": zod.string().nullish(),
+  "shipment": zod.object({
+  "id": zod.number().int(),
+  "orderId": zod.number().int(),
+  "status": zod.string(),
+  "carrier": zod.string().nullish(),
+  "carrierCode": zod.string().nullish(),
+  "serviceCode": zod.string().nullish(),
+  "trackingNumber": zod.string().nullish(),
+  "trackingUrl": zod.string().nullish(),
+  "labelUrl": zod.string().nullish(),
+  "shipstationShipmentId": zod.string().nullish(),
+  "estimatedDelivery": zod.string().nullish(),
+  "shippedAt": zod.string().nullish(),
+  "deliveredAt": zod.string().nullish(),
+  "pushAttempts": zod.number().int(),
+  "lastPushError": zod.string().nullish(),
+  "lastPushAt": zod.string().nullish(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "eventType": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "occurredAt": zod.string()
+})).optional(),
+  "createdAt": zod.string()
+}).optional()
 })
 
 

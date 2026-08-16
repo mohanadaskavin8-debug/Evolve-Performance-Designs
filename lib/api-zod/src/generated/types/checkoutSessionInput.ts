@@ -16,6 +16,16 @@ export interface CheckoutSessionInput {
   discountCode?: string | null;
   /** @nullable */
   shippingZoneRateId?: number | null;
+  /**
+     * Destination country. Required to check out; the session pins Stripe address collection to it and validates the selected rate against its zone.
+     * @nullable
+     */
+  countryCode?: string | null;
+  /**
+     * Destination postal/ZIP code, used to live-quote carrier-calculated rates with a real destination
+     * @nullable
+     */
+  postalCode?: string | null;
   successUrl: string;
   cancelUrl: string;
 }

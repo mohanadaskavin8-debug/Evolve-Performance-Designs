@@ -11,6 +11,8 @@ export interface TrackingEvent {
   label: string;
   description: string;
   /** @nullable */
+  location?: string | null;
+  /** @nullable */
   timestamp?: string | null;
   isCompleted: boolean;
   isCurrent?: boolean;

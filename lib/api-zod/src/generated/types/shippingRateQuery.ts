@@ -9,4 +9,9 @@
 export interface ShippingRateQuery {
   countryCode: string;
   sessionId?: string;
+  /**
+     * Destination postal/ZIP code; enables live carrier quotes (otherwise stored fallback prices are shown)
+     * @nullable
+     */
+  postalCode?: string | null;
 }

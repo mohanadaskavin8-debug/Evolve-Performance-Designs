@@ -34,6 +34,7 @@ import ReviewsPage from '@/pages/reviews';
 import ActivityPage from '@/pages/activity';
 import ReportsPage from '@/pages/reports';
 import ShippingPage from '@/pages/shipping';
+import FulfillmentPage from '@/pages/fulfillment';
 
 const queryClient = new QueryClient();
 const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -99,6 +100,10 @@ function Router() {
 
         <Route path="/shipping">
           <AuthGuard><ShippingPage /></AuthGuard>
+        </Route>
+
+        <Route path="/fulfillment">
+          <AuthGuard><FulfillmentPage /></AuthGuard>
         </Route>
         
         <Route path="/team">

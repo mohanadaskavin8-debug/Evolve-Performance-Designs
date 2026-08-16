@@ -22,5 +22,7 @@ export interface AdminProductInput {
   dimensionsCm?: string;
   hsCode?: string;
   countryOfOrigin?: string;
+  customsDescription?: string;
+  customsValueCents?: number;
   collectionIds?: number[];
 }

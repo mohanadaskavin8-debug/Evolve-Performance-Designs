@@ -32,6 +32,8 @@ export const productsTable = pgTable("products", {
   dimensionsCm: text("dimensions_cm"),
   hsCode: text("hs_code"),
   countryOfOrigin: text("country_of_origin"),
+  customsDescription: text("customs_description"),
+  customsValueCents: integer("customs_value_cents"),
   isFeatured: boolean("is_featured").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

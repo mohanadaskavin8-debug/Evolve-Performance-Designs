@@ -167,6 +167,16 @@ export interface CheckoutSessionInput {
   discountCode?: string | null;
   /** @nullable */
   shippingZoneRateId?: number | null;
+  /**
+     * Destination country. Required to check out; the session pins Stripe address collection to it and validates the selected rate against its zone.
+     * @nullable
+     */
+  countryCode?: string | null;
+  /**
+     * Destination postal/ZIP code, used to live-quote carrier-calculated rates with a real destination
+     * @nullable
+     */
+  postalCode?: string | null;
   successUrl: string;
   cancelUrl: string;
 }
@@ -183,6 +193,11 @@ export interface CheckoutSessionResponse {
 export interface ShippingRateQuery {
   countryCode: string;
   sessionId?: string;
+  /**
+     * Destination postal/ZIP code; enables live carrier quotes (otherwise stored fallback prices are shown)
+     * @nullable
+     */
+  postalCode?: string | null;
 }
 
 export interface ShippingRateOption {
@@ -286,6 +301,8 @@ export interface TrackingEvent {
   status: string;
   label: string;
   description: string;
+  /** @nullable */
+  location?: string | null;
   /** @nullable */
   timestamp?: string | null;
   isCompleted: boolean;
@@ -577,21 +594,46 @@ export interface AdminDashboard {
   salesByDay: AdminDashboardSalesByDayItem[];
 }
 
+export interface AdminShipmentEvent {
+  id: number;
+  eventType: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  location?: string | null;
+  occurredAt: string;
+}
+
 export interface AdminShipment {
   id: number;
   orderId: number;
+  status: string;
   /** @nullable */
   carrier?: string | null;
+  /** @nullable */
+  carrierCode?: string | null;
+  /** @nullable */
+  serviceCode?: string | null;
   /** @nullable */
   trackingNumber?: string | null;
   /** @nullable */
   trackingUrl?: string | null;
+  /** @nullable */
+  labelUrl?: string | null;
+  /** @nullable */
+  shipstationShipmentId?: string | null;
   /** @nullable */
   estimatedDelivery?: string | null;
   /** @nullable */
   shippedAt?: string | null;
   /** @nullable */
   deliveredAt?: string | null;
+  pushAttempts: number;
+  /** @nullable */
+  lastPushError?: string | null;
+  /** @nullable */
+  lastPushAt?: string | null;
+  events?: AdminShipmentEvent[];
   createdAt: string;
 }
 
@@ -630,6 +672,61 @@ export interface AdminOrderDetail {
   shipments?: AdminShipment[];
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface AdminFulfillmentStatus {
+  connected: boolean;
+  healthy: boolean;
+  testMode: boolean;
+  /** @nullable */
+  message?: string | null;
+  /** @nullable */
+  carrierCount?: number | null;
+  pendingPushes: number;
+  failedPushes: number;
+  activeShipments: number;
+  deliveredLast30Days: number;
+}
+
+export interface AdminShipmentRow {
+  id: number;
+  orderId: number;
+  orderNumber: string;
+  /** @nullable */
+  customerEmail?: string | null;
+  /** @nullable */
+  destinationCountry?: string | null;
+  status: string;
+  /** @nullable */
+  carrier?: string | null;
+  /** @nullable */
+  serviceCode?: string | null;
+  /** @nullable */
+  trackingNumber?: string | null;
+  /** @nullable */
+  trackingUrl?: string | null;
+  /** @nullable */
+  labelUrl?: string | null;
+  pushAttempts: number;
+  /** @nullable */
+  lastPushError?: string | null;
+  /** @nullable */
+  shippedAt?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  createdAt: string;
+}
+
+export interface AdminShipmentListResponse {
+  shipments: AdminShipmentRow[];
+  total: number;
+}
+
+export interface AdminFulfillmentPushResult {
+  pushed: boolean;
+  /** @nullable */
+  error?: string | null;
+  shipment?: AdminShipment;
 }
 
 export type AdminOrderActionInputAction = typeof AdminOrderActionInputAction[keyof typeof AdminOrderActionInputAction];
@@ -794,6 +891,10 @@ export interface AdminProductDetail {
   hsCode?: string | null;
   /** @nullable */
   countryOfOrigin?: string | null;
+  /** @nullable */
+  customsDescription?: string | null;
+  /** @nullable */
+  customsValueCents?: number | null;
   variants: AdminProductVariant[];
   images: ProductImage[];
   collections: Collection[];
@@ -817,6 +918,8 @@ export interface AdminProductInput {
   dimensionsCm?: string;
   hsCode?: string;
   countryOfOrigin?: string;
+  customsDescription?: string;
+  customsValueCents?: number;
   collectionIds?: number[];
 }
 
@@ -836,6 +939,8 @@ export interface AdminProductUpdate {
   dimensionsCm?: string;
   hsCode?: string;
   countryOfOrigin?: string;
+  customsDescription?: string;
+  customsValueCents?: number;
   collectionIds?: number[];
 }
 
@@ -1080,6 +1185,10 @@ export interface AdminShippingRateInput {
   minimumOrderInCents?: number;
   estimatedDays: string;
   active?: boolean;
+  /** @nullable */
+  carrierCode?: string | null;
+  /** @nullable */
+  serviceCode?: string | null;
 }
 
 export interface AdminShippingRateUpdate {
@@ -1090,6 +1199,10 @@ export interface AdminShippingRateUpdate {
   minimumOrderInCents?: number;
   estimatedDays?: string;
   active?: boolean;
+  /** @nullable */
+  carrierCode?: string | null;
+  /** @nullable */
+  serviceCode?: string | null;
 }
 
 export interface AdminSupportTicket {
@@ -1433,4 +1546,11 @@ export const AdminGetSalesReportPeriod = {
   quarter: 'quarter',
   year: 'year',
 } as const;
+
+export type AdminListShipmentsParams = {
+status?: string;
+search?: string;
+limit?: number;
+offset?: number;
+};
 

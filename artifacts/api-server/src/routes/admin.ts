@@ -14,6 +14,9 @@ import {
 } from "@workspace/db";
 import { eq, and, desc, asc, or, ilike, sql, lt, gte, inArray, ne } from "drizzle-orm";
 import Stripe from "stripe";
+import * as shipstation from "../lib/shipstation";
+import { attemptPush, getFulfillmentCounts, triggerOrderFulfillment } from "../lib/fulfillment";
+import { checkResendHealth } from "../lib/email";
 
 const router = Router();
 
@@ -400,7 +403,7 @@ router.get("/orders", async (req, res, next) => requireAdmin(req, res, next), as
 
 router.get("/orders/:orderId", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res) => {
   const orderId = parseInt(req.params.orderId);
-  const [orderRow, itemRows, shipmentRows] = await Promise.all([
+  const [orderRow, itemRows, shipmentRows, eventRows] = await Promise.all([
     pool.query(`
       SELECT o.*, COALESCE(c.email, o.guest_email) as customer_email,
              COALESCE(CONCAT(c.first_name, ' ', c.last_name), '') as customer_name
@@ -409,6 +412,7 @@ router.get("/orders/:orderId", async (req, res, next) => requireAdmin(req, res, 
     `, [orderId]),
     pool.query("SELECT * FROM order_items WHERE order_id = $1 ORDER BY id", [orderId]),
     pool.query("SELECT * FROM shipments WHERE order_id = $1 ORDER BY created_at DESC", [orderId]),
+    pool.query("SELECT * FROM shipment_events WHERE order_id = $1 ORDER BY occurred_at", [orderId]),
   ]);
   if (!orderRow.rows[0]) return res.status(404).json({ error: "Order not found" });
   const o = orderRow.rows[0];
@@ -429,12 +433,9 @@ router.get("/orders/:orderId", async (req, res, next) => requireAdmin(req, res, 
     stripeSessionId: o.stripe_session_id, stripePaymentIntentId: o.stripe_payment_intent_id,
     stripeRiskLevel: o.stripe_risk_level, stripeRiskScore: o.stripe_risk_score,
     requiresManualReview: o.requires_manual_review,
-    shipments: shipmentRows.rows.map((s: any) => ({
-      id: s.id, orderId: s.order_id, carrier: s.carrier, trackingNumber: s.tracking_number,
-      trackingUrl: s.tracking_url, estimatedDelivery: s.estimated_delivery,
-      shippedAt: s.shipped_at?.toISOString() ?? null, deliveredAt: s.delivered_at?.toISOString() ?? null,
-      createdAt: s.created_at?.toISOString(),
-    })),
+    shipments: shipmentRows.rows.map((s: any) =>
+      mapAdminShipment(s, eventRows.rows.filter((e: any) => e.shipment_id === s.id)),
+    ),
     createdAt: o.created_at?.toISOString(), updatedAt: o.updated_at?.toISOString(),
   });
 });
@@ -455,6 +456,8 @@ router.post("/orders/:orderId/actions", async (req, res, next) => requireAdmin(r
   } else if (action === "clear_fraud_flag") {
     await db.update(ordersTable).set({ requiresManualReview: false, updatedAt: new Date() }).where(eq(ordersTable.id, orderId));
     await logActivity({ actor: req.adminUser, action: "order.fraud_cleared", entityType: "order", entityId: String(orderId), entityLabel: order.orderNumber });
+    // The hold is lifted — the order is now eligible for automatic fulfillment.
+    triggerOrderFulfillment(orderId);
   } else if (action === "fulfill") {
     newStatus = "fulfilled";
     if (carrier || trackingNumber) {
@@ -684,6 +687,7 @@ async function getProductDetail(productId: number) {
     materials: p.materials, benefits: p.benefits, shippingInfo: p.shipping_info, returnsInfo: p.returns_info,
     status: p.status, isFeatured: p.is_featured, sortOrder: p.sort_order,
     weightGrams: p.weight_grams, dimensionsCm: p.dimensions_cm, hsCode: p.hs_code, countryOfOrigin: p.country_of_origin,
+    customsDescription: p.customs_description, customsValueCents: p.customs_value_cents,
     variants: variantRows.rows.map((v: any) => ({
       id: v.id, sku: v.sku, size: v.size, color: v.color,
       priceInCents: v.price_in_cents, compareAtPriceInCents: v.compare_at_price_in_cents,
@@ -1010,13 +1014,13 @@ router.delete("/shipping/zones/:zoneId", async (req, res, next) => requireAdmin(
 router.post("/shipping/zones/:zoneId/rates", async (req, res, next) => requireAdmin(req, res, next, "manager"), async (req: any, res) => {
   const zoneId = parseInt(req.params.zoneId);
   const [r] = await db.insert(shippingRatesTable).values({ ...req.body, zoneId }).returning();
-  res.status(201).json({ id: r.id, name: r.name, description: r.description, rateType: r.rateType, priceInCents: r.priceInCents, minimumOrderInCents: r.minimumOrderInCents, estimatedDays: r.estimatedDays, active: r.active });
+  res.status(201).json({ id: r.id, name: r.name, description: r.description, rateType: r.rateType, priceInCents: r.priceInCents, minimumOrderInCents: r.minimumOrderInCents, estimatedDays: r.estimatedDays, active: r.active, carrierCode: r.carrierCode, serviceCode: r.serviceCode });
 });
 
 router.patch("/shipping/zones/:zoneId/rates/:rateId", async (req, res, next) => requireAdmin(req, res, next, "manager"), async (req: any, res) => {
   const [r] = await db.update(shippingRatesTable).set(req.body).where(eq(shippingRatesTable.id, parseInt(req.params.rateId))).returning();
   if (!r) return res.status(404).json({ error: "Rate not found" });
-  res.json({ id: r.id, name: r.name, description: r.description, rateType: r.rateType, priceInCents: r.priceInCents, minimumOrderInCents: r.minimumOrderInCents, estimatedDays: r.estimatedDays, active: r.active });
+  res.json({ id: r.id, name: r.name, description: r.description, rateType: r.rateType, priceInCents: r.priceInCents, minimumOrderInCents: r.minimumOrderInCents, estimatedDays: r.estimatedDays, active: r.active, carrierCode: r.carrierCode, serviceCode: r.serviceCode });
 });
 
 router.delete("/shipping/zones/:zoneId/rates/:rateId", async (req, res, next) => requireAdmin(req, res, next, "manager"), async (req: any, res) => {
@@ -1302,33 +1306,147 @@ router.get("/exports/:exportType", async (req, res, next) => requireAdmin(req, r
   res.send(csvContent);
 });
 
+// ── /admin/fulfillment ────────────────────────────────────────────────────────
+
+function mapAdminShipment(s: any, events: any[] = []) {
+  return {
+    id: s.id, orderId: s.order_id, status: s.status, carrier: s.carrier, carrierCode: s.carrier_code,
+    serviceCode: s.service_code, trackingNumber: s.tracking_number, trackingUrl: s.tracking_url,
+    labelUrl: s.label_url, shipstationShipmentId: s.shipstation_shipment_id,
+    estimatedDelivery: s.estimated_delivery,
+    shippedAt: s.shipped_at?.toISOString() ?? null, deliveredAt: s.delivered_at?.toISOString() ?? null,
+    pushAttempts: s.push_attempts ?? 0, lastPushError: s.last_push_error,
+    lastPushAt: s.last_push_at?.toISOString() ?? null,
+    events: events.map((e: any) => ({
+      id: e.id, eventType: e.event_type, description: e.description,
+      location: e.location, occurredAt: e.occurred_at?.toISOString(),
+    })),
+    createdAt: s.created_at?.toISOString(),
+  };
+}
+
+router.get("/fulfillment/status", async (req, res, next) => requireAdmin(req, res, next), async (_req: any, res) => {
+  const [health, counts] = await Promise.all([shipstation.checkConnection(), getFulfillmentCounts()]);
+  res.json({
+    connected: health.connected,
+    healthy: health.healthy,
+    testMode: shipstation.isTestMode(),
+    message: health.message,
+    carrierCount: health.carrierCount,
+    ...counts,
+  });
+});
+
+router.get("/shipments", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res) => {
+  const { status, search, limit = "50", offset = "0" } = req.query as any;
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  let p = 1;
+  if (status) { conditions.push(`s.status = $${p++}`); params.push(status); }
+  if (search) {
+    conditions.push(`(o.order_number ILIKE $${p} OR c.email ILIKE $${p} OR o.guest_email ILIKE $${p} OR s.tracking_number ILIKE $${p})`);
+    params.push(`%${search}%`); p++;
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const [rows, countRow] = await Promise.all([
+    pool.query(`
+      SELECT s.*, o.order_number, COALESCE(c.email, o.guest_email) AS customer_email,
+             o.shipping_address->>'countryCode' AS destination_country
+      FROM shipments s
+      JOIN orders o ON o.id = s.order_id
+      LEFT JOIN customers c ON c.id = o.customer_id
+      ${where} ORDER BY s.created_at DESC LIMIT $${p} OFFSET $${p + 1}
+    `, [...params, parseInt(limit), parseInt(offset)]),
+    pool.query(`SELECT COUNT(*) FROM shipments s JOIN orders o ON o.id = s.order_id LEFT JOIN customers c ON c.id = o.customer_id ${where}`, params),
+  ]);
+  res.json({
+    shipments: rows.rows.map((s: any) => ({
+      id: s.id, orderId: s.order_id, orderNumber: s.order_number, customerEmail: s.customer_email,
+      destinationCountry: s.destination_country, status: s.status, carrier: s.carrier,
+      serviceCode: s.service_code, trackingNumber: s.tracking_number, trackingUrl: s.tracking_url,
+      labelUrl: s.label_url, pushAttempts: s.push_attempts ?? 0, lastPushError: s.last_push_error,
+      shippedAt: s.shipped_at?.toISOString() ?? null, deliveredAt: s.delivered_at?.toISOString() ?? null,
+      createdAt: s.created_at?.toISOString(),
+    })),
+    total: parseInt(countRow.rows[0].count),
+  });
+});
+
+router.post("/orders/:orderId/fulfillment/push", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res) => {
+  const orderId = parseInt(req.params.orderId);
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (order.requiresManualReview) {
+    return res.status(409).json({ error: "Order is held for fraud review — clear the review flag before pushing to fulfillment." });
+  }
+
+  const result = await attemptPush(orderId, { manual: true });
+  if (result.blocked) return res.status(409).json({ error: result.blocked });
+  await logActivity({
+    actor: req.adminUser,
+    action: result.pushed ? "fulfillment.pushed" : "fulfillment.push_failed",
+    entityType: "order", entityId: String(orderId), entityLabel: order.orderNumber,
+    details: result.error ? { error: result.error } : {},
+  });
+
+  const shipmentRow = await pool.query("SELECT * FROM shipments WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1", [orderId]);
+  const s = shipmentRow.rows[0];
+  const events = s ? await pool.query("SELECT * FROM shipment_events WHERE shipment_id = $1 ORDER BY occurred_at", [s.id]) : { rows: [] };
+  res.json({ pushed: result.pushed, error: result.error, ...(s ? { shipment: mapAdminShipment(s, events.rows) } : {}) });
+});
+
 // ── /admin/system/status ──────────────────────────────────────────────────────
 
+const HEALTH_CHECK_TIMEOUT_MS = 6_000;
+
+function healthTimeout<T>(p: Promise<T>): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Health check timed out")), HEALTH_CHECK_TIMEOUT_MS)),
+  ]);
+}
+
 router.get("/system/status", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res) => {
-  const services = [];
-
-  // DB check
-  try {
+  const timed = async (name: string, check: () => Promise<string | null>) => {
     const t0 = Date.now();
-    await pool.query("SELECT 1");
-    services.push({ name: "Database", status: "healthy", latencyMs: Date.now() - t0, message: null });
-  } catch (e: any) {
-    services.push({ name: "Database", status: "unhealthy", latencyMs: null, message: e.message });
-  }
+    try {
+      const message = await healthTimeout(check());
+      return { name, status: message ? "degraded" : "healthy", latencyMs: Date.now() - t0, message };
+    } catch (e: any) {
+      return { name, status: "unhealthy", latencyMs: null, message: e.message ?? String(e) };
+    }
+  };
 
-  // Stripe check
-  try {
-    const t0 = Date.now();
-    await getStripe().balance.retrieve();
-    services.push({ name: "Stripe", status: "healthy", latencyMs: Date.now() - t0, message: null });
-  } catch (e: any) {
-    services.push({ name: "Stripe", status: "unhealthy", latencyMs: null, message: e.message });
-  }
+  const services = await Promise.all([
+    timed("Database", async () => { await pool.query("SELECT 1"); return null; }),
+    timed("Stripe", async () => { await getStripe().balance.retrieve(); return null; }),
+    timed("Clerk", async () => {
+      const key = process.env["CLERK_SECRET_KEY"];
+      if (!key) return "CLERK_SECRET_KEY not configured";
+      const r = await fetch("https://api.clerk.com/v1/users/count", { headers: { Authorization: `Bearer ${key}` } });
+      if (!r.ok) throw new Error(`Clerk API returned ${r.status}`);
+      return null;
+    }),
+    timed("Resend (email)", async () => {
+      const health = await checkResendHealth();
+      if (!health.healthy) throw new Error(health.message ?? "Resend unreachable");
+      return null;
+    }),
+    timed("ShipStation", async () => {
+      const health = await shipstation.checkConnection();
+      if (!health.connected) return health.message ?? "Not connected — fulfillment automation idle";
+      if (!health.healthy) throw new Error(health.message ?? "ShipStation unreachable");
+      return null;
+    }),
+  ]);
 
-  // API (self)
   services.push({ name: "API Server", status: "healthy", latencyMs: 0, message: null });
 
-  const overallStatus = services.every((s) => s.status === "healthy") ? "healthy" : "degraded";
+  const overallStatus = services.every((s) => s.status === "healthy")
+    ? "healthy"
+    : services.some((s) => s.status === "unhealthy")
+      ? "unhealthy"
+      : "degraded";
   res.json({ status: overallStatus, services });
 });
 

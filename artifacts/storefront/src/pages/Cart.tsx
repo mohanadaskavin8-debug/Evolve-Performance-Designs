@@ -1,4 +1,4 @@
-import { useGetCart, useUpdateCartItem, useRemoveCartItem, useCreateCheckoutSession } from '@workspace/api-client-react';
+import { useGetCart, useUpdateCartItem, useRemoveCartItem, useCreateCheckoutSession, useQueryShippingRates } from '@workspace/api-client-react';
 import { getCartSessionId, formatPrice, getProductImage } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetCartQueryKey } from '@workspace/api-client-react';
@@ -7,6 +7,27 @@ import { Trash2, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@clerk/react';
+
+// Must stay in sync with the allowed_countries list in the checkout session.
+const SHIP_COUNTRIES = [
+  { code: 'US', label: 'United States' },
+  { code: 'CA', label: 'Canada' },
+  { code: 'GB', label: 'United Kingdom' },
+  { code: 'AU', label: 'Australia' },
+  { code: 'DE', label: 'Germany' },
+  { code: 'FR', label: 'France' },
+  { code: 'JP', label: 'Japan' },
+  { code: 'SG', label: 'Singapore' },
+  { code: 'AE', label: 'United Arab Emirates' },
+];
+
+interface RateOption {
+  id: number;
+  name: string;
+  description: string;
+  priceInCents: number;
+  estimatedDays: string;
+}
 
 export default function Cart() {
   const sessionId = getCartSessionId();
@@ -23,6 +44,53 @@ export default function Cart() {
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
   const createCheckout = useCreateCheckoutSession();
+  const queryRates = useQueryShippingRates();
+
+  const [shipCountry, setShipCountry] = useState('');
+  const [shipPostal, setShipPostal] = useState('');
+  const [rateOptions, setRateOptions] = useState<RateOption[]>([]);
+  const [selectedRateId, setSelectedRateId] = useState<number | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(false);
+
+  // Countries without postal codes (rates can be quoted from country alone).
+  const NO_POSTAL = ['AE'];
+  const needsPostal = !!shipCountry && !NO_POSTAL.includes(shipCountry);
+
+  const fetchRates = async (code: string, postal: string) => {
+    if (!code) return;
+    setRatesLoading(true);
+    try {
+      const rates = await queryRates.mutateAsync({
+        data: { countryCode: code, sessionId, postalCode: postal.trim() || undefined },
+      });
+      const sorted = [...rates].sort((a, b) => a.priceInCents - b.priceInCents);
+      setRateOptions(sorted);
+      setSelectedRateId(sorted.length ? sorted[0].id : null);
+    } catch {
+      setRateOptions([]);
+      setSelectedRateId(null);
+    } finally {
+      setRatesLoading(false);
+    }
+  };
+
+  const handleCountryChange = async (code: string) => {
+    setShipCountry(code);
+    // A postal code belongs to one country — never reuse it for a new destination.
+    setShipPostal('');
+    setSelectedRateId(null);
+    setRateOptions([]);
+    if (!code) return;
+    await fetchRates(code, '');
+  };
+
+  // Re-quote when the postal code is committed (blur / Enter) so carrier
+  // rates reflect the real destination.
+  const handlePostalCommit = async () => {
+    if (shipCountry) await fetchRates(shipCountry, shipPostal);
+  };
+
+  const selectedRate = rateOptions.find(r => r.id === selectedRateId) ?? null;
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -52,6 +120,9 @@ export default function Cart() {
           sessionId,
           clerkUserId: user?.id,
           customerEmail: user?.primaryEmailAddress?.emailAddress,
+          shippingZoneRateId: selectedRateId ?? undefined,
+          countryCode: shipCountry || undefined,
+          postalCode: shipPostal.trim() || undefined,
           successUrl: `${window.location.origin}/checkout/success`,
           cancelUrl: `${window.location.origin}/cart`
         }
@@ -144,7 +215,66 @@ export default function Cart() {
             <div className="lg:col-span-4">
               <div className="border border-white/10 bg-white/[0.02] p-8 sticky top-32">
                 <h3 className="font-display font-bold uppercase tracking-widest text-white mb-6 border-b border-white/10 pb-4">Logistics</h3>
-                
+
+                <div className="mb-8">
+                  <label className="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Deployment Zone</label>
+                  <select
+                    value={shipCountry}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className="w-full bg-black border border-white/20 text-white font-mono text-xs uppercase tracking-widest px-3 py-3 focus:outline-none focus:border-primary"
+                  >
+                    <option value="">Select country…</option>
+                    {SHIP_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                  </select>
+
+                  {needsPostal && (
+                    <input
+                      type="text"
+                      value={shipPostal}
+                      onChange={(e) => setShipPostal(e.target.value)}
+                      onBlur={handlePostalCommit}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                      placeholder="Postal / ZIP code"
+                      autoComplete="postal-code"
+                      className="mt-3 w-full bg-black border border-white/20 text-white font-mono text-xs uppercase tracking-widest px-3 py-3 focus:outline-none focus:border-primary placeholder:text-muted-foreground/60"
+                    />
+                  )}
+
+                  {ratesLoading && (
+                    <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mt-3 animate-pulse">Calculating rates…</p>
+                  )}
+                  {!ratesLoading && shipCountry && rateOptions.length === 0 && (
+                    <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mt-3">No shipping options for this destination yet — we'll confirm shipping after your order.</p>
+                  )}
+                  {rateOptions.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {rateOptions.map(rate => (
+                        <label
+                          key={rate.id}
+                          className={`flex items-start gap-3 border px-3 py-3 cursor-pointer transition-colors ${selectedRateId === rate.id ? 'border-primary bg-primary/10' : 'border-white/15 hover:border-white/40'}`}
+                        >
+                          <input
+                            type="radio"
+                            name="shippingRate"
+                            checked={selectedRateId === rate.id}
+                            onChange={() => setSelectedRateId(rate.id)}
+                            className="mt-0.5 accent-primary"
+                          />
+                          <span className="flex-1">
+                            <span className="flex justify-between gap-2 font-mono text-xs uppercase tracking-widest text-white">
+                              <span>{rate.name}</span>
+                              <span>{rate.priceInCents === 0 ? 'Free' : formatPrice(rate.priceInCents)}</span>
+                            </span>
+                            {rate.estimatedDays && (
+                              <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{rate.estimatedDays}</span>
+                            )}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-4 font-mono text-sm uppercase tracking-widest mb-8">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal</span>
@@ -152,17 +282,21 @@ export default function Cart() {
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Shipping</span>
-                    <span>Calculated at next step</span>
+                    <span className={selectedRate ? 'text-white' : ''}>
+                      {selectedRate
+                        ? (selectedRate.priceInCents === 0 ? 'Free' : formatPrice(selectedRate.priceInCents))
+                        : 'Select destination'}
+                    </span>
                   </div>
                   <div className="border-t border-white/10 pt-4 flex justify-between font-bold text-lg mt-4">
                     <span className="text-white">Total</span>
-                    <span className="text-primary">{formatPrice(cart.subtotalInCents)}</span>
+                    <span className="text-primary">{formatPrice(cart.subtotalInCents + (selectedRate?.priceInCents ?? 0))}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={handleCheckout}
-                  disabled={checkoutLoading}
+                  disabled={checkoutLoading || ratesLoading || !shipCountry || (rateOptions.length > 0 && selectedRateId == null)}
                   className="w-full bg-white text-black hover:bg-primary hover:text-white py-4 font-mono font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {checkoutLoading ? (
@@ -171,6 +305,9 @@ export default function Cart() {
                     <>Deploy Order <ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
+                {!shipCountry && (
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground text-center mt-3">Select a deployment zone to continue</p>
+                )}
               </div>
             </div>
           </div>

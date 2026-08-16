@@ -1,6 +1,6 @@
-# [Project name]
+# Evolve Performance
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+E-commerce platform for anime/game-inspired lifting straps: customer storefront, admin operations portal, and automated fulfillment pipeline.
 
 ## Run & Operate
 
@@ -22,15 +22,28 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/storefront` — customer storefront (root path `/`)
+- `artifacts/admin` — admin portal (`/admin`), Clerk-gated
+- `artifacts/api-server` — Express API (`/api`)
+- `lib/db/src/schema/commerce.ts` — source of truth for DB schema (orders, shipments, shipment_events, transactional_emails, …)
+- `lib/api-spec/openapi.yaml` — source of truth for API contracts; codegen produces `lib/api-client-react` hooks + `lib/api-zod`
+- `artifacts/api-server/src/lib/shipstation.ts` — the ONLY module allowed to call the ShipStation API
+- `artifacts/api-server/src/lib/fulfillment.ts` — fulfillment engine (push queue, label/tracking sync, milestone emails, 60s loop)
+- `artifacts/api-server/src/lib/email.ts` — Resend transactional emails (idempotent per order+type)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Payment success always wins**: Stripe webhook records the order first; ShipStation push happens async afterwards with retry/backoff — fulfillment being down can never fail a sale.
+- **Fraud holds block automation**: orders with `requiresManualReview` are never auto-pushed; clearing the flag in admin resumes fulfillment.
+- **Labels are bought by the owner in the ShipStation UI**, never via API. The app only pushes orders and reads back labels/tracking. `SHIPSTATION_TEST_MODE` defaults to `true`.
+- **ShipStation webhooks are untrusted hints**: they only trigger an immediate re-poll; all persisted data comes from authenticated API reads.
+- **Milestone emails are DB-idempotent**: `transactional_emails` claim-first unique insert on (orderId, emailType) — six milestones, no duplicates.
+- **Calculated shipping rates fail open**: any ShipStation error at checkout silently falls back to the rate's stored flat price.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Storefront: shop, cart, Stripe checkout, order tracking timeline (real carrier events once shipped), account & returns.
+- Admin ("EVOLVE OS"): dashboard, orders (fraud review, fulfillment automation panel, manual push/retry), products (incl. logistics & customs fields), inventory, shipping zones/rates (flat, free, live carrier-calculated), fulfillment center (connection state, pipeline stats, shipments table), system status, reports, team roles.
 
 ## User preferences
 
@@ -38,7 +51,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After editing `lib/api-spec/openapi.yaml`, always run `pnpm --filter @workspace/api-spec run codegen` (regenerates hooks + zod, then typechecks libs).
+- Stripe webhook route is raw-body mounted before JSON middleware; keep it that way.
+- Admin API status values are `healthy | degraded | unhealthy` (ShipStation not connected ⇒ `degraded`, not an outage).
+- Drizzle: never interpolate JS arrays into raw ``sql`… = ANY(${arr})` `` — use `inArray()` (raw `pool.query` with a real array param is fine).
 
 ## Pointers
 

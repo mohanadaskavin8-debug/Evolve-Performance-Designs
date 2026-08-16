@@ -105,6 +105,7 @@ export default function TrackOrder() {
                     </h4>
                     <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-2">
                       {event.description}
+                      {event.location && <span className="text-white/40 ml-2">· {event.location}</span>}
                     </p>
                     {event.timestamp && (
                       <p className="font-mono text-xs text-white/50">{new Date(event.timestamp).toLocaleString()}</p>

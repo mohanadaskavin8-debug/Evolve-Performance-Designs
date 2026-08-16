@@ -245,6 +245,8 @@ function RateDialog({ zoneId, rate }: { zoneId: number, rate?: any }) {
   const [minOrder, setMinOrder] = useState(rate?.minimumOrderInCents ? (rate.minimumOrderInCents / 100).toString() : '');
   const [estimatedDays, setEstimatedDays] = useState(rate?.estimatedDays || '');
   const [active, setActive] = useState(rate ? rate.active : true);
+  const [carrierCode, setCarrierCode] = useState(rate?.carrierCode || '');
+  const [serviceCode, setServiceCode] = useState(rate?.serviceCode || '');
 
   const createMut = useAdminCreateShippingRate();
   const updateMut = useAdminUpdateShippingRate();
@@ -257,7 +259,9 @@ function RateDialog({ zoneId, rate }: { zoneId: number, rate?: any }) {
       priceInCents: Math.round(parseFloat(price) * 100) || 0,
       minimumOrderInCents: minOrder ? Math.round(parseFloat(minOrder) * 100) : undefined,
       estimatedDays,
-      active
+      active,
+      carrierCode: rateType === 'calculated' ? (carrierCode.trim() || null) : null,
+      serviceCode: rateType === 'calculated' ? (serviceCode.trim() || null) : null,
     };
 
     if (!rate) {
@@ -306,14 +310,33 @@ function RateDialog({ zoneId, rate }: { zoneId: number, rate?: any }) {
                 <SelectContent>
                   <SelectItem value="flat">Flat Rate</SelectItem>
                   <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="calculated">Live Carrier Rate</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Price (USD)</Label>
+              <Label>{rateType === 'calculated' ? 'Fallback Price (USD)' : 'Price (USD)'}</Label>
               <Input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} disabled={rateType === 'free'} className="font-mono" />
             </div>
           </div>
+          {rateType === 'calculated' && (
+            <div className="space-y-3 p-3 border rounded-lg bg-secondary/20">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Quotes the live carrier price from ShipStation at checkout. If ShipStation is
+                unavailable or not connected, customers are charged the fallback price instead.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Carrier Code</Label>
+                  <Input value={carrierCode} onChange={e => setCarrierCode(e.target.value)} placeholder="e.g. usps" className="font-mono lowercase" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Service Code</Label>
+                  <Input value={serviceCode} onChange={e => setServiceCode(e.target.value)} placeholder="e.g. usps_priority_mail" className="font-mono lowercase" />
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Min Order Value (USD)</Label>

@@ -7,6 +7,7 @@ import {
   customersTable, inventoryReservationsTable, productsTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { triggerOrderFulfillment } from "../lib/fulfillment";
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.post("/", async (req, res) => {
     const cartSessionId = session.metadata?.sessionId;
     if (!cartSessionId) return res.json({ received: true });
 
+    let createdOrderId: number | null = null;
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -72,19 +74,50 @@ router.post("/", async (req, res) => {
         countryCode: addr.country ?? "",
       } : null;
 
+      // Capture Stripe's fraud assessment. Payment success always wins: any
+      // failure here degrades to "no risk data", never to a failed order.
+      const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
+      let riskLevel: string | null = null;
+      let riskScore: number | null = null;
+      try {
+        if (paymentIntentId) {
+          const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ["latest_charge"] });
+          const charge = pi.latest_charge && typeof pi.latest_charge !== "string" ? pi.latest_charge : null;
+          riskLevel = charge?.outcome?.risk_level ?? null;
+          riskScore = typeof charge?.outcome?.risk_score === "number" ? charge.outcome.risk_score : null;
+        }
+      } catch (riskErr) {
+        console.error("Stripe risk lookup failed (order continues without it):", riskErr);
+      }
+      // Destination integrity: the checkout session pinned Stripe's address
+      // collection to the quoted country, so a mismatch here should be
+      // impossible — but if one appears, hold the order for human review.
+      // Payment success always wins; we flag, never fail.
+      const quotedCountry = session.metadata?.quotedCountry || null;
+      const countryMismatch = !!(quotedCountry && shippingAddress?.countryCode && shippingAddress.countryCode !== quotedCountry);
+      if (countryMismatch) {
+        console.error(`Order destination mismatch: quoted ${quotedCountry}, shipped-to ${shippingAddress?.countryCode} (session ${session.id})`);
+      }
+
+      // Elevated/highest risk → hold for human review; never auto-push to fulfillment.
+      const requiresManualReview = riskLevel === "elevated" || riskLevel === "highest" || countryMismatch;
+
       const { rows: orderRows } = await client.query(
-        `INSERT INTO orders (order_number, customer_id, guest_email, status, subtotal_in_cents, shipping_in_cents, tax_in_cents, total_in_cents, currency, shipping_address, stripe_session_id, stripe_payment_intent_id)
-         VALUES ($1,$2,$3,'paid',$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+        `INSERT INTO orders (order_number, customer_id, guest_email, status, subtotal_in_cents, shipping_in_cents, tax_in_cents, total_in_cents, currency, shipping_address, stripe_session_id, stripe_payment_intent_id, stripe_risk_level, stripe_risk_score, requires_manual_review)
+         VALUES ($1,$2,$3,'paid',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
         [
           orderNum, customerId, customerId ? null : email,
           session.amount_subtotal ?? 0,
-          0,
+          session.total_details?.amount_shipping ?? 0,
           session.total_details?.amount_tax ?? 0,
           session.amount_total ?? 0,
           session.currency?.toUpperCase() ?? "USD",
           JSON.stringify(shippingAddress),
           session.id,
-          typeof session.payment_intent === "string" ? session.payment_intent : null,
+          paymentIntentId,
+          riskLevel,
+          riskScore,
+          requiresManualReview,
         ],
       );
       const orderId = orderRows[0].id;
@@ -133,12 +166,19 @@ router.post("/", async (req, res) => {
       // Clear cart and commit
       await client.query(`DELETE FROM cart_items WHERE session_id = $1`, [cartSessionId]);
       await client.query("COMMIT");
+      createdOrderId = orderId;
     } catch (e) {
       await client.query("ROLLBACK");
       console.error("Webhook order create failed:", e);
       return res.status(500).json({ error: "Order fulfillment failed" });
     } finally {
       client.release();
+    }
+
+    // Kick fulfillment AFTER the order is committed — fire-and-forget so the
+    // payment path never waits on (or fails because of) ShipStation.
+    if (createdOrderId !== null) {
+      triggerOrderFulfillment(createdOrderId);
     }
   }
 

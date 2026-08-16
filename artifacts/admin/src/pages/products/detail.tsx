@@ -49,6 +49,13 @@ export default function ProductDetailPage() {
   const [materials, setMaterials] = useState('');
   const [benefits, setBenefits] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
+  // Logistics & customs (drives ShipStation weights and international declarations)
+  const [weightGrams, setWeightGrams] = useState('');
+  const [dimensionsCm, setDimensionsCm] = useState('');
+  const [hsCode, setHsCode] = useState('');
+  const [countryOfOrigin, setCountryOfOrigin] = useState('');
+  const [customsDescription, setCustomsDescription] = useState('');
+  const [customsValue, setCustomsValue] = useState('');
 
   useEffect(() => {
     if (product && initializedId.current !== id) {
@@ -60,13 +67,27 @@ export default function ProductDetailPage() {
       setMaterials(product.materials || '');
       setBenefits(product.benefits || '');
       setIsFeatured(!!product.isFeatured);
+      setWeightGrams(product.weightGrams != null ? String(product.weightGrams) : '');
+      setDimensionsCm(product.dimensionsCm || '');
+      setHsCode(product.hsCode || '');
+      setCountryOfOrigin(product.countryOfOrigin || '');
+      setCustomsDescription((product as any).customsDescription || '');
+      setCustomsValue((product as any).customsValueCents != null ? ((product as any).customsValueCents / 100).toString() : '');
     }
   }, [product, id]);
 
   const handleSaveDetails = () => {
     updateProduct.mutate({
       productId: id,
-      data: { name, slug, description, theme, materials, benefits, isFeatured }
+      data: {
+        name, slug, description, theme, materials, benefits, isFeatured,
+        ...(weightGrams.trim() ? { weightGrams: parseInt(weightGrams) || 0 } : {}),
+        ...(dimensionsCm.trim() ? { dimensionsCm: dimensionsCm.trim() } : {}),
+        ...(hsCode.trim() ? { hsCode: hsCode.trim() } : {}),
+        ...(countryOfOrigin.trim() ? { countryOfOrigin: countryOfOrigin.trim().toUpperCase() } : {}),
+        ...(customsDescription.trim() ? { customsDescription: customsDescription.trim() } : {}),
+        ...(customsValue.trim() ? { customsValueCents: Math.round(parseFloat(customsValue) * 100) || 0 } : {}),
+      }
     }, {
       onSuccess: () => {
         toast({ title: 'Success', description: 'Product details updated.' });
@@ -180,6 +201,50 @@ export default function ProductDetailPage() {
             <CardFooter className="bg-secondary/20 border-t p-4 flex justify-end">
               <Button onClick={handleSaveDetails} disabled={updateProduct.isPending} className="font-bold tracking-wide">
                 <Save className="w-4 h-4 mr-2" /> Save Details
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4 border-b">
+              <CardTitle className="text-lg">Logistics & Customs</CardTitle>
+              <CardDescription>Used for ShipStation weights and international customs declarations.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Weight (grams)</Label>
+                  <Input type="number" value={weightGrams} onChange={e => setWeightGrams(e.target.value)} placeholder="e.g. 250" className="font-mono" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Dimensions (cm, L×W×H)</Label>
+                  <Input value={dimensionsCm} onChange={e => setDimensionsCm(e.target.value)} placeholder="e.g. 30x8x2" className="font-mono" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>HS Tariff Code</Label>
+                  <Input value={hsCode} onChange={e => setHsCode(e.target.value)} placeholder="e.g. 6307.90" className="font-mono" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Country of Origin</Label>
+                  <Input value={countryOfOrigin} onChange={e => setCountryOfOrigin(e.target.value)} placeholder="e.g. US" maxLength={2} className="font-mono uppercase" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Customs Description</Label>
+                  <Input value={customsDescription} onChange={e => setCustomsDescription(e.target.value)} placeholder="e.g. Cotton lifting straps" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Declared Value (USD / unit)</Label>
+                  <Input type="number" step="0.01" value={customsValue} onChange={e => setCustomsValue(e.target.value)} placeholder="Defaults to sale price" className="font-mono" />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="bg-secondary/20 border-t p-4 flex justify-end">
+              <Button onClick={handleSaveDetails} disabled={updateProduct.isPending} variant="outline" className="font-bold tracking-wide">
+                <Save className="w-4 h-4 mr-2" /> Save Logistics
               </Button>
             </CardFooter>
           </Card>
