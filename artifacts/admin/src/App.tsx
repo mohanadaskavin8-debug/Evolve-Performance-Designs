@@ -15,6 +15,7 @@ import {
 import { AuthGuard } from '@/components/ui/auth-guard';
 import SetupPage from '@/pages/setup';
 import SignInPage from '@/pages/sign-in';
+import SignUpPage from '@/pages/sign-up';
 import DashboardPage from '@/pages/dashboard';
 import OrdersPage from '@/pages/orders/index';
 import OrderDetailPage from '@/pages/orders/detail';
@@ -45,7 +46,8 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <Switch>
-        <Route path="/sign-in" component={SignInPage} />
+        <Route path="/sign-in/*?" component={SignInPage} />
+        <Route path="/sign-up/*?" component={SignUpPage} />
         
         {/* Protected Routes */}
         <Route path="/setup">

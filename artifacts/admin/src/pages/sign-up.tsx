@@ -1,6 +1,6 @@
-import { SignIn } from '@clerk/clerk-react';
+import { SignUp } from '@clerk/clerk-react';
 
-export default function SignInPage() {
+export default function SignUpPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_0%,_hsl(var(--primary)/0.1)_0%,_transparent_50%)]" />
@@ -11,9 +11,9 @@ export default function SignInPage() {
           </div>
           EVOLVE<span className="text-primary font-mono text-sm ml-1 tracking-widest mt-2">OS</span>
         </div>
-        <SignIn
+        <SignUp
           routing="path"
-          path={`${import.meta.env.BASE_URL}sign-in`}
+          path={`${import.meta.env.BASE_URL}sign-up`}
           appearance={{
             elements: {
               card: "shadow-xl border bg-card rounded-xl",
@@ -27,8 +27,8 @@ export default function SignInPage() {
               formFieldInput: "bg-input border-transparent rounded-md",
               formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold tracking-wide",
               footerActionText: "text-muted-foreground",
-              footerActionLink: "text-primary hover:text-primary/90 font-medium"
-            }
+              footerActionLink: "text-primary hover:text-primary/90 font-medium",
+            },
           }}
         />
       </div>
