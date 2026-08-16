@@ -294,6 +294,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Updated cart
@@ -2573,6 +2578,7 @@ components:
           type: integer
         items:
           type: array
+          minItems: 1
           items:
             $ref: "#/components/schemas/ReturnLineItem"
         reason:

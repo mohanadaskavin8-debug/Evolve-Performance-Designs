@@ -374,6 +374,7 @@ export interface ReturnRequest {
 
 export interface ReturnRequestInput {
   orderId: number;
+  /** @minItems 1 */
   items: ReturnLineItem[];
   reason: string;
   preferExchange?: boolean;
@@ -1326,6 +1327,10 @@ offset?: number;
 };
 
 export type GetCartParams = {
+sessionId: string;
+};
+
+export type RemoveCartItemParams = {
 sessionId: string;
 };
 

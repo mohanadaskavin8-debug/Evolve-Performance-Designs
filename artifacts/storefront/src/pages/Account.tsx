@@ -1,349 +1,140 @@
-import { useState } from 'react';
-import { SignIn, SignOutButton, useUser } from '@clerk/react';
-import { 
-  useGetAccountProfile, 
-  useUpdateAccountProfile, 
-  useListAccountOrders, 
-  useListAccountAddresses, 
-  useListAccountReturns,
-  useCreateAccountAddress,
-  useDeleteAccountAddress
-} from '@workspace/api-client-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useListAccountOrders, useGetAccountProfile } from '@workspace/api-client-react';
+import { useUser, SignOutButton } from '@clerk/react';
 import { formatPrice } from '@/lib/utils';
 import { Link } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
-import { LogOut, Package, MapPin, RefreshCw, UserCircle, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { LogOut, Package, ArrowRight, CornerUpLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Account() {
-  const { isSignedIn, isLoaded } = useUser();
-
-  if (!isLoaded) return null;
-
-  return (
-    <div className="container mx-auto px-4 py-12">
-      {!isSignedIn ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <h1 className="text-4xl font-display font-bold uppercase tracking-tight mb-8">Access Terminal</h1>
-          <SignIn routing="hash" appearance={{ elements: { rootBox: "mx-auto" } }} />
-        </div>
-      ) : (
-        <AccountDashboard />
-      )}
-    </div>
-  );
-}
-
-function AccountDashboard() {
-  const { user } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-tight mb-2">
-            Command Center
-          </h1>
-          <p className="font-mono text-muted-foreground">Operative: {user?.primaryEmailAddress?.emailAddress}</p>
-        </div>
-        <SignOutButton>
-          <Button variant="outline" className="font-display uppercase tracking-widest gap-2">
-            <LogOut className="w-4 h-4" /> Disconnect
-          </Button>
-        </SignOutButton>
+  const { data: profile, isLoading: profileLoading } = useGetAccountProfile({
+    query: { enabled: isSignedIn, queryKey: ['account-profile'] }
+  });
+
+  const { data: ordersData, isLoading: ordersLoading } = useListAccountOrders(
+    { limit: 10 },
+    { query: { enabled: isSignedIn, queryKey: ['account-orders'] } }
+  );
+
+  if (!isLoaded || profileLoading || ordersLoading) {
+    return (
+      <div className="min-h-screen pt-32 bg-background flex justify-center">
+        <div className="w-16 h-16 border-t-2 border-primary rounded-full animate-spin"></div>
       </div>
-
-      <Tabs defaultValue="orders" className="w-full flex flex-col md:flex-row gap-8">
-        <TabsList className="flex md:flex-col justify-start h-auto bg-transparent p-0 space-y-0 space-x-2 md:space-x-0 md:space-y-2 w-full md:w-64 shrink-0 overflow-x-auto border-b md:border-b-0 md:border-r border-border pb-4 md:pb-0 md:pr-4">
-          <TabsTrigger value="orders" className="data-[state=active]:bg-card data-[state=active]:border-border border border-transparent w-full justify-start px-4 py-3 font-display uppercase tracking-widest text-sm">
-            <Package className="w-4 h-4 mr-2 hidden md:block" /> Deployment History
-          </TabsTrigger>
-          <TabsTrigger value="profile" className="data-[state=active]:bg-card data-[state=active]:border-border border border-transparent w-full justify-start px-4 py-3 font-display uppercase tracking-widest text-sm">
-            <UserCircle className="w-4 h-4 mr-2 hidden md:block" /> Dossier
-          </TabsTrigger>
-          <TabsTrigger value="addresses" className="data-[state=active]:bg-card data-[state=active]:border-border border border-transparent w-full justify-start px-4 py-3 font-display uppercase tracking-widest text-sm">
-            <MapPin className="w-4 h-4 mr-2 hidden md:block" /> Safehouses
-          </TabsTrigger>
-          <TabsTrigger value="returns" className="data-[state=active]:bg-card data-[state=active]:border-border border border-transparent w-full justify-start px-4 py-3 font-display uppercase tracking-widest text-sm">
-            <RefreshCw className="w-4 h-4 mr-2 hidden md:block" /> Returns
-          </TabsTrigger>
-        </TabsList>
-        
-        <div className="flex-1 min-w-0">
-          <TabsContent value="orders" className="m-0 focus-visible:outline-none">
-            <OrdersTab />
-          </TabsContent>
-          <TabsContent value="profile" className="m-0 focus-visible:outline-none">
-            <ProfileTab />
-          </TabsContent>
-          <TabsContent value="addresses" className="m-0 focus-visible:outline-none">
-            <AddressesTab />
-          </TabsContent>
-          <TabsContent value="returns" className="m-0 focus-visible:outline-none">
-            <ReturnsTab />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
-  );
-}
-
-function OrdersTab() {
-  const { data: ordersData, isLoading } = useListAccountOrders({}, { query: { queryKey: ['account-orders'] } });
-
-  if (isLoading) return <div className="font-mono animate-pulse">Loading records...</div>;
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-bold uppercase tracking-widest mb-6">Deployment History</h2>
-      {ordersData?.length ? (
-        <div className="space-y-4">
-          {ordersData.map(order => (
-            <div key={order.id} className="bg-card border border-border rounded-xl p-6 flex flex-col md:flex-row justify-between gap-6 hover:border-primary/50 transition-colors">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-display font-bold uppercase tracking-wider text-xl">{order.orderNumber}</h3>
-                  <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className="font-mono uppercase text-[10px]">
-                    {order.status}
-                  </Badge>
-                </div>
-                <p className="font-mono text-sm text-muted-foreground mb-1">{new Date(order.createdAt).toLocaleDateString()}</p>
-                <p className="font-mono text-sm text-muted-foreground">{order.itemCount} item{order.itemCount > 1 ? 's' : ''} • {formatPrice(order.totalInCents)}</p>
-              </div>
-              <div className="flex flex-col gap-2 shrink-0">
-                <Button variant="outline" className="font-display uppercase tracking-widest w-full md:w-auto" asChild>
-                  <Link href={`/orders/${order.orderNumber}`}>View Details</Link>
-                </Button>
-                {order.trackingNumber && (
-                  <Button variant="ghost" className="font-display uppercase tracking-widest w-full md:w-auto text-primary" asChild>
-                    <Link href={`/track?orderNumber=${order.orderNumber}`}>Track Status</Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-card border border-border rounded-xl">
-          <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="font-mono text-muted-foreground uppercase tracking-widest mb-6">No deployments on record.</p>
-          <Button asChild className="font-display uppercase tracking-widest">
-            <Link href="/products">Visit Armory</Link>
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProfileTab() {
-  const { data: profile, refetch } = useGetAccountProfile({ query: { queryKey: ['account-profile'] } });
-  const updateProfile = useUpdateAccountProfile();
-  const { toast } = useToast();
-  
-  const [firstName, setFirstName] = useState(profile?.firstName || '');
-  const [lastName, setLastName] = useState(profile?.lastName || '');
-  const [phone, setPhone] = useState(profile?.phone || '');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateProfile.mutate(
-      { data: { firstName, lastName, phone } },
-      { 
-        onSuccess: () => {
-          toast({ title: "Dossier Updated", description: "Your operative profile has been synchronized." });
-          refetch();
-        },
-        onError: () => {
-          toast({ title: "Error", description: "Failed to sync profile.", variant: "destructive" });
-        }
-      }
     );
-  };
+  }
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-display font-bold uppercase tracking-widest mb-6">Operative Dossier</h2>
-      <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6 space-y-6 max-w-xl">
-        <div>
-          <Label className="font-display uppercase tracking-widest text-muted-foreground">Email Designation</Label>
-          <Input value={profile?.email || ''} disabled className="mt-2 bg-background opacity-50 font-mono" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="font-display uppercase tracking-widest text-muted-foreground">First Name</Label>
-            <Input value={firstName} onChange={e => setFirstName(e.target.value)} className="mt-2 bg-background font-mono" />
-          </div>
-          <div>
-            <Label className="font-display uppercase tracking-widest text-muted-foreground">Last Name</Label>
-            <Input value={lastName} onChange={e => setLastName(e.target.value)} className="mt-2 bg-background font-mono" />
-          </div>
-        </div>
-        <div>
-          <Label className="font-display uppercase tracking-widest text-muted-foreground">Comm Link (Phone)</Label>
-          <Input value={phone} onChange={e => setPhone(e.target.value)} className="mt-2 bg-background font-mono" />
-        </div>
-        <Button type="submit" disabled={updateProfile.isPending} className="font-display uppercase tracking-widest">
-          {updateProfile.isPending ? 'Syncing...' : 'Update Records'}
-        </Button>
-      </form>
-    </div>
-  );
-}
-
-function AddressesTab() {
-  const { data: addresses, refetch } = useListAccountAddresses({ query: { queryKey: ['account-addresses'] } });
-  const createAddress = useCreateAccountAddress();
-  const deleteAddress = useDeleteAccountAddress();
-  const { toast } = useToast();
-  
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', line1: '', line2: '', city: '', state: '', postalCode: '', countryCode: 'US' });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createAddress.mutate(
-      { data: formData },
-      {
-        onSuccess: () => {
-          toast({ title: "Safehouse Added", description: "New coordinates secured." });
-          setShowForm(false);
-          refetch();
-        },
-        onError: () => toast({ title: "Error", description: "Failed to establish coordinates.", variant: "destructive" })
-      }
+  if (!isSignedIn) {
+    // Should be handled by Clerk redirecting to login, but just in case
+    return (
+      <div className="min-h-screen pt-32 bg-background text-center flex flex-col items-center">
+        <h1 className="text-3xl font-display font-bold uppercase tracking-widest text-white mb-4">Access Denied</h1>
+        <p className="font-mono text-muted-foreground uppercase tracking-widest">Authentication required to view this sector.</p>
+      </div>
     );
-  };
-
-  const handleDelete = (id: number) => {
-    deleteAddress.mutate(
-      { addressId: id },
-      { onSuccess: () => refetch() }
-    );
-  };
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-display font-bold uppercase tracking-widest">Safehouses</h2>
-        <Button variant="outline" onClick={() => setShowForm(!showForm)} className="font-display uppercase tracking-widest">
-          {showForm ? 'Cancel' : 'Add New'}
-        </Button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6 space-y-4 max-w-xl mb-8">
+    <div className="min-h-screen bg-background pt-32 pb-24">
+      <div className="container mx-auto px-6 md:px-12 max-w-6xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-16">
           <div>
-            <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">Alias</Label>
-            <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-background font-mono mt-1" />
+            <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-[0.2em] text-white mb-6">
+              Operative Profile
+            </h1>
+            <div className="w-24 h-1 bg-primary" />
           </div>
-          <div>
-            <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">Address Line 1</Label>
-            <Input required value={formData.line1} onChange={e => setFormData({...formData, line1: e.target.value})} className="bg-background font-mono mt-1" />
-          </div>
-          <div>
-            <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">Address Line 2 (Optional)</Label>
-            <Input value={formData.line2} onChange={e => setFormData({...formData, line2: e.target.value})} className="bg-background font-mono mt-1" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">City</Label>
-              <Input required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="bg-background font-mono mt-1" />
-            </div>
-            <div>
-              <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">State/Province</Label>
-              <Input required value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="bg-background font-mono mt-1" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">Postal Code</Label>
-              <Input required value={formData.postalCode} onChange={e => setFormData({...formData, postalCode: e.target.value})} className="bg-background font-mono mt-1" />
-            </div>
-            <div>
-              <Label className="font-display uppercase tracking-widest text-xs text-muted-foreground">Country</Label>
-              <Input required value={formData.countryCode} onChange={e => setFormData({...formData, countryCode: e.target.value})} className="bg-background font-mono mt-1 uppercase" maxLength={2} />
-            </div>
-          </div>
-          <Button type="submit" disabled={createAddress.isPending} className="font-display uppercase tracking-widest mt-4">
-            Save Coordinates
-          </Button>
-        </form>
-      )}
+          <SignOutButton>
+            <button className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-white transition-colors">
+              <LogOut className="w-4 h-4" /> Disconnect
+            </button>
+          </SignOutButton>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {addresses?.map(addr => (
-          <div key={addr.id} className="bg-card border border-border rounded-xl p-6 relative group">
-            {addr.isDefault && <Badge className="absolute top-4 right-4 font-mono uppercase text-[10px]">Primary</Badge>}
-            <h3 className="font-display font-bold uppercase tracking-wider mb-2">{addr.name}</h3>
-            <div className="font-mono text-sm text-muted-foreground space-y-1">
-              <p>{addr.line1}</p>
-              {addr.line2 && <p>{addr.line2}</p>}
-              <p>{addr.city}, {addr.state} {addr.postalCode}</p>
-              <p>{addr.countryCode}</p>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute bottom-4 right-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => handleDelete(addr.id)}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
-        {addresses?.length === 0 && !showForm && (
-          <div className="col-span-full text-center py-12 font-mono text-muted-foreground uppercase">
-            No safehouses established.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ReturnsTab() {
-  const { data: returns } = useListAccountReturns({ query: { queryKey: ['account-returns'] } });
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-display font-bold uppercase tracking-widest">Return Operations</h2>
-        <Button asChild className="font-display uppercase tracking-widest">
-          <Link href="/account/returns/new">Initiate Return</Link>
-        </Button>
-      </div>
-
-      {returns?.length ? (
-        <div className="space-y-4">
-          {returns.map(req => (
-            <div key={req.id} className="bg-card border border-border rounded-xl p-6 flex flex-col md:flex-row justify-between gap-4">
-              <div>
-                <h3 className="font-display font-bold uppercase tracking-wider mb-1">RMA: {req.id}</h3>
-                <p className="font-mono text-sm text-muted-foreground">Original Order: {req.orderNumber}</p>
-                <p className="font-mono text-sm text-muted-foreground">Filed on {new Date(req.createdAt).toLocaleDateString()}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          {/* Sidebar / Identity */}
+          <div className="lg:col-span-4">
+            <div className="border border-white/10 bg-white/[0.02] p-8">
+              <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center border border-primary mb-6">
+                <span className="font-display font-bold text-2xl text-primary uppercase">
+                  {profile?.firstName?.[0] || user.firstName?.[0] || 'O'}
+                  {profile?.lastName?.[0] || user.lastName?.[0] || 'P'}
+                </span>
               </div>
-              <div className="flex flex-col items-start md:items-end gap-2">
-                <Badge variant={req.status === 'approved' ? 'default' : 'secondary'} className="font-mono uppercase tracking-widest">
-                  {req.status}
-                </Badge>
-                {req.refundAmountInCents && (
-                  <span className="font-mono font-bold text-primary">Refund: {formatPrice(req.refundAmountInCents)}</span>
-                )}
+              <h3 className="font-display font-bold uppercase tracking-widest text-white text-xl mb-2">
+                {profile?.firstName || user.firstName} {profile?.lastName || user.lastName}
+              </h3>
+              <p className="font-mono text-sm text-muted-foreground break-all mb-8">{profile?.email || user.primaryEmailAddress?.emailAddress}</p>
+              
+              <div className="space-y-4 font-mono text-xs uppercase tracking-widest">
+                <Link href="/account/returns/new" className="flex items-center justify-between border border-white/10 p-4 hover:border-primary hover:text-white text-muted-foreground transition-colors group">
+                  <span>Initiate Return</span>
+                  <CornerUpLeft className="w-4 h-4 group-hover:text-primary" />
+                </Link>
+                <Link href="/support" className="flex items-center justify-between border border-white/10 p-4 hover:border-primary hover:text-white text-muted-foreground transition-colors group">
+                  <span>Support Comms</span>
+                  <ArrowRight className="w-4 h-4 group-hover:text-primary" />
+                </Link>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Orders */}
+          <div className="lg:col-span-8">
+            <h3 className="font-display font-bold uppercase tracking-[0.15em] text-white text-2xl mb-8 flex items-center gap-3">
+              <Package className="w-6 h-6 text-primary" /> Deployment History
+            </h3>
+
+            {!ordersData || ordersData.length === 0 ? (
+              <div className="border border-white/10 bg-black p-12 text-center">
+                <p className="font-mono text-muted-foreground uppercase tracking-widest mb-6">No previous deployments found.</p>
+                <Link href="/products" className="bg-white text-black px-6 py-3 font-mono font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-colors">
+                  Access Armory
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {ordersData.map((order, i) => (
+                  <motion.div 
+                    key={order.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="border border-white/10 bg-black p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:border-white/30 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center gap-4 mb-2">
+                        <span className="font-display font-bold text-white text-xl uppercase tracking-widest">
+                          {order.orderNumber}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 bg-white/10 text-white">
+                          {order.status}
+                        </span>
+                      </div>
+                      <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
+                        {new Date(order.createdAt).toLocaleDateString()} • {order.itemCount} items
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-6 w-full md:w-auto">
+                      <span className="font-mono font-bold text-lg text-white">
+                        {formatPrice(order.totalInCents)}
+                      </span>
+                      <Link 
+                        href={`/orders/${order.orderNumber}`}
+                        className="bg-transparent border border-white/20 px-6 py-2 font-mono text-xs uppercase tracking-widest text-white hover:bg-white hover:text-black transition-colors w-full md:w-auto text-center"
+                      >
+                        View Intel
+                      </Link>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="text-center py-16 bg-card border border-border rounded-xl">
-          <RefreshCw className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <p className="font-mono text-muted-foreground uppercase tracking-widest">No return operations on record.</p>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

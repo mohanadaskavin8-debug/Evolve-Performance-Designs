@@ -22,27 +22,24 @@ export function formatPrice(cents: number | undefined | null, currency = 'USD'):
   }).format(cents / 100);
 }
 
-const images = [
-  'jdm-night-city.jpg',
-  'werewolf-blood-moon.jpg',
-  'cyberpunk-girl.jpg',
-  'ninja-fire.jpg',
-  'mecha-strike.jpg',
-  'demon-slayer-breath.jpg',
-  'samurai-spirit.jpg',
-  'cosmic-horror.jpg',
-  'neo-tokyo-drift.jpg',
-  'shonen-protagonist.jpg',
-];
+/** Real product strap designs (provided by the brand owner). Keys are product slugs. */
+const STRAP_SLUGS = new Set([
+  'jdm-night-city',
+  'christ-redeemer-sunset',
+  'neon-japan',
+  'knight-warrior',
+  'ninja-fire',
+  'military-green',
+  'desert-war',
+  'werewolf-blood-moon',
+  'soccer-stadium',
+  'cyberpunk-girl',
+]);
 
 export function getProductImage(slug: string | null | undefined, fallback?: string | null): string {
-  if (!slug) return fallback || '/products/jdm-night-city.jpg';
-  let hash = 0;
-  for (let i = 0; i < slug.length; i++) {
-    hash = slug.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % images.length;
   // Always use BASE_URL as prefix for static assets in case of nested deployments
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-  return `${basePath}/products/${images[index]}`;
+  if (slug && STRAP_SLUGS.has(slug)) return `${basePath}/straps/${slug}.jpg`;
+  if (fallback) return fallback;
+  return `${basePath}/straps/jdm-night-city.jpg`;
 }

@@ -300,6 +300,10 @@ export const RemoveCartItemParams = zod.object({
   "itemId": zod.coerce.string()
 })
 
+export const RemoveCartItemQueryParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
 export const RemoveCartItemResponse = zod.object({
   "sessionId": zod.string(),
   "items": zod.array(zod.object({
@@ -626,6 +630,9 @@ export const ListAccountReturnsResponse = zod.array(ListAccountReturnsResponseIt
 /**
  * @summary Submit a return request
  */
+
+
+
 export const SubmitReturnRequestBody = zod.object({
   "orderId": zod.number().int(),
   "items": zod.array(zod.object({
@@ -633,7 +640,7 @@ export const SubmitReturnRequestBody = zod.object({
   "quantity": zod.number().int(),
   "reason": zod.string(),
   "notes": zod.string().nullish()
-})),
+})).min(1),
   "reason": zod.string(),
   "preferExchange": zod.boolean().optional()
 })

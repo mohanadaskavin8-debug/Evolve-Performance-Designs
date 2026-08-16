@@ -45,10 +45,17 @@ export function AdminLayout({ children, title }: { children: ReactNode; title?: 
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       <aside className="w-full md:w-64 bg-sidebar border-r border-sidebar-border flex-shrink-0 flex flex-col sticky top-0 md:h-screen">
         <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-sidebar-foreground tracking-tight">
-            <div className="w-6 h-6 bg-primary rounded-sm flex items-center justify-center text-primary-foreground">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-sidebar-foreground tracking-tight">
+            <img
+              src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/brand/ep-logo-white.png`}
+              alt="Evolve Performance"
+              className="w-7 h-7 dark:block hidden"
+            />
+            <img
+              src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/brand/ep-logo.png`}
+              alt="Evolve Performance"
+              className="w-7 h-7 dark:hidden block"
+            />
             EVOLVE<span className="text-primary font-mono text-xs ml-1 tracking-widest mt-1">OS</span>
           </Link>
         </div>

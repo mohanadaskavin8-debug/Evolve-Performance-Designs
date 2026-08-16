@@ -1,94 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'wouter';
-import { ShoppingCart, Menu, X, User } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, ChevronRight } from 'lucide-react';
 import { useGetSiteSettings, useGetCart } from '@workspace/api-client-react';
 import { getCartSessionId } from '@/lib/utils';
-import { useUser, SignOutButton } from '@clerk/react';
+import { useUser } from '@clerk/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import gsap from 'gsap';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const [showIntro, setShowIntro] = useState(false);
-
-  useEffect(() => {
-    const hasSeenIntro = sessionStorage.getItem('ep_intro_seen');
-    if (!hasSeenIntro) {
-      setShowIntro(true);
-    }
-  }, []);
-
-  const handleIntroComplete = () => {
-    setShowIntro(false);
-    sessionStorage.setItem('ep_intro_seen', 'true');
-  };
-
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground relative">
       <div className="grain-overlay" />
-      
-      <AnimatePresence>
-        {showIntro && <IntroScreen onComplete={handleIntroComplete} />}
-      </AnimatePresence>
-
       <Navbar />
-      
-      <main className="flex-1 pt-16">
+      <main className="flex-1">
         {children}
       </main>
-
       <Footer />
     </div>
-  );
-}
-
-function IntroScreen({ onComplete }: { onComplete: () => void }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const logoRef = useRef<HTMLImageElement>(null);
-  const textRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        onComplete: () => {
-          gsap.to(containerRef.current, { opacity: 0, duration: 0.5, onComplete });
-        }
-      });
-
-      tl.from(logoRef.current, { scale: 0.5, opacity: 0, duration: 1, ease: "power4.out" })
-        .to(logoRef.current, { scale: 1.1, duration: 0.5, ease: "power2.inOut" })
-        .from(textRef.current, { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, "-=0.2")
-        .to({}, { duration: 1.5 }); // Hold
-
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, [onComplete]);
-
-  return (
-    <motion.div 
-      ref={containerRef}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
-      exit={{ opacity: 0 }}
-    >
-      <img 
-        ref={logoRef}
-        src={import.meta.env.BASE_URL + "assets/Image_4_1786835910739.jpeg"}
-        alt="Evolve Performance"
-        className="w-32 h-32 rounded-full mb-8"
-        onError={(e) => {
-          e.currentTarget.src = 'https://via.placeholder.com/128?text=EP';
-        }}
-      />
-      <h1 ref={textRef} className="text-xl md:text-3xl font-display font-bold tracking-widest text-primary">
-        TRAIN LIKE AN ANIME CHARACTER
-      </h1>
-      <button 
-        onClick={onComplete}
-        className="absolute bottom-10 text-muted-foreground hover:text-white transition-colors uppercase tracking-widest text-sm font-mono"
-      >
-        Skip
-      </button>
-    </motion.div>
   );
 }
 
@@ -101,59 +28,58 @@ function Navbar() {
   return (
     <>
       {settings?.announcementBanner && (
-        <div className="fixed top-0 left-0 right-0 h-8 bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono tracking-wider z-40">
+        <div className="fixed top-0 left-0 right-0 h-8 bg-foreground text-background flex items-center justify-center text-xs font-mono tracking-widest z-50 uppercase">
           {settings.announcementBanner}
         </div>
       )}
       
-      <header className={`fixed ${settings?.announcementBanner ? 'top-8' : 'top-0'} left-0 right-0 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md z-40 transition-all`}>
-        <div className="container mx-auto px-4 h-full flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+      <header className={`fixed ${settings?.announcementBanner ? 'top-8' : 'top-0'} left-0 right-0 h-20 border-b border-white/5 bg-background/60 backdrop-blur-xl z-40 transition-all`}>
+        <div className="px-6 md:px-12 h-full flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button className="md:hidden text-white hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 group">
               <img 
-                src={import.meta.env.BASE_URL + "assets/Image_4_1786835910739.jpeg"}
-                alt="Logo"
-                className="w-8 h-8 rounded-full"
+                src={import.meta.env.BASE_URL + "brand/ep-logo-white.png"}
+                alt="Evolve Performance"
+                className="w-10 h-10 object-contain group-hover:scale-110 transition-transform duration-500"
                 onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/32?text=EP';
+                  e.currentTarget.src = 'https://via.placeholder.com/40?text=EP';
                 }}
               />
-              <span className="font-display font-bold uppercase tracking-wider hidden md:block">
-                {settings?.businessName || 'Evolve Performance'}
+              <span className="font-display font-bold uppercase tracking-[0.2em] hidden md:block text-xl mt-1">
+                Evolve
               </span>
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/products" className="text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors">
-              Shop
+          <nav className="hidden md:flex items-center gap-10">
+            <Link href="/products" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
+              Equip
+              <span className="absolute -bottom-2 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
-            <Link href="/products?collection=all" className="text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors">
-              Collections
-            </Link>
-            <Link href="/track" className="text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors">
-              Track Order
+            <Link href="/collections/all" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
+              Series
+              <span className="absolute -bottom-2 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             {isSignedIn ? (
-              <Link href="/account" className="hidden md:flex items-center gap-2 hover:text-primary transition-colors">
+              <Link href="/account" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-white transition-colors">
                 <User className="w-5 h-5" />
               </Link>
             ) : (
-              <Link href="/account" className="hidden md:flex items-center gap-2 hover:text-primary transition-colors">
-                <span className="text-sm font-bold uppercase tracking-widest">Login</span>
+              <Link href="/account" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-white transition-colors">
+                <span className="text-xs font-mono uppercase tracking-widest">Login</span>
               </Link>
             )}
             
-            <Link href="/cart" className="relative hover:text-primary transition-colors flex items-center">
+            <Link href="/cart" className="relative text-muted-foreground hover:text-white transition-colors flex items-center">
               <ShoppingCart className="w-5 h-5" />
               {cart?.itemCount ? (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-sm">
                   {cart.itemCount}
                 </span>
               ) : null}
@@ -165,24 +91,26 @@ function Navbar() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`fixed inset-0 ${settings?.announcementBanner ? 'top-24' : 'top-16'} z-30 bg-background border-b border-border md:hidden`}
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(16px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className={`fixed inset-0 ${settings?.announcementBanner ? 'top-24' : 'top-20'} z-30 bg-background/95 md:hidden`}
           >
-            <nav className="flex flex-col p-6 gap-6">
-              <Link href="/products" className="text-xl font-display font-bold uppercase tracking-widest hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                Shop All
+            <nav className="flex flex-col p-8 gap-8">
+              <Link href="/products" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                Equip <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
-              <Link href="/products?collection=all" className="text-xl font-display font-bold uppercase tracking-widest hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                Collections
+              <div className="h-px bg-white/10 w-full" />
+              <Link href="/collections/all" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                Series <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
-              <Link href="/track" className="text-xl font-display font-bold uppercase tracking-widest hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                Track Order
+              <div className="h-px bg-white/10 w-full" />
+              <Link href="/track" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                Track Ops <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
-              <div className="h-px bg-border my-2" />
-              <Link href="/account" className="text-xl font-display font-bold uppercase tracking-widest hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                {isSignedIn ? 'My Account' : 'Login / Sign Up'}
+              <div className="h-px bg-white/10 w-full" />
+              <Link href="/account" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                {isSignedIn ? 'Profile' : 'Authenticate'} <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
             </nav>
           </motion.div>
@@ -196,51 +124,48 @@ function Footer() {
   const { data: settings } = useGetSiteSettings({ query: { queryKey: ['site-settings'] } });
 
   return (
-    <footer className="border-t border-border mt-24 bg-card py-12">
-      <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="border-t border-white/10 bg-background pt-20 pb-10">
+      <div className="container mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2">
-          <Link href="/" className="flex items-center gap-3 mb-4">
+          <Link href="/" className="flex items-center gap-4 mb-6 group inline-flex">
             <img 
-              src={import.meta.env.BASE_URL + "assets/Image_4_1786835910739.jpeg"}
-              alt="Logo"
-              className="w-8 h-8 rounded-full"
-              onError={(e) => {
-                e.currentTarget.src = 'https://via.placeholder.com/32?text=EP';
-              }}
+              src={import.meta.env.BASE_URL + "brand/ep-logo-white.png"}
+              alt="Evolve Performance"
+              className="w-12 h-12 object-contain group-hover:scale-110 transition-transform duration-500"
             />
-            <span className="font-display font-bold uppercase tracking-wider">
-              {settings?.businessName || 'Evolve Performance'}
+            <span className="font-display font-bold uppercase tracking-[0.2em] text-2xl mt-1">
+              Evolve
             </span>
           </Link>
-          <p className="text-muted-foreground text-sm font-mono max-w-sm">
-            Train with conviction. Cinematic lifting gear built for athletes who push beyond their limits.
+          <p className="text-muted-foreground text-sm font-mono max-w-md leading-relaxed">
+            Train with conviction. Cinematic lifting gear built for athletes who push beyond their limits. Equip yourself for the next level.
           </p>
         </div>
         
         <div>
-          <h4 className="font-display font-bold uppercase tracking-widest mb-4">Shop</h4>
-          <ul className="space-y-2 text-sm font-mono text-muted-foreground">
-            <li><Link href="/products" className="hover:text-primary">All Products</Link></li>
-            <li><Link href="/collections/all" className="hover:text-primary">Collections</Link></li>
-            <li><Link href="/track" className="hover:text-primary">Track Order</Link></li>
+          <h4 className="font-display font-bold uppercase tracking-[0.2em] mb-6 text-white text-lg">Armory</h4>
+          <ul className="space-y-4 text-sm font-mono text-muted-foreground uppercase tracking-wider">
+            <li><Link href="/products" className="hover:text-primary transition-colors">All Gear</Link></li>
+            <li><Link href="/collections/all" className="hover:text-primary transition-colors">Series</Link></li>
+            <li><Link href="/track" className="hover:text-primary transition-colors">Track Ops</Link></li>
           </ul>
         </div>
         
         <div>
-          <h4 className="font-display font-bold uppercase tracking-widest mb-4">Support</h4>
-          <ul className="space-y-2 text-sm font-mono text-muted-foreground">
-            <li><Link href="/support" className="hover:text-primary">Contact Us</Link></li>
-            <li><Link href="/pages/faq" className="hover:text-primary">FAQ</Link></li>
-            <li><Link href="/pages/shipping-policy" className="hover:text-primary">Shipping Policy</Link></li>
-            <li><Link href="/pages/return-policy" className="hover:text-primary">Returns</Link></li>
+          <h4 className="font-display font-bold uppercase tracking-[0.2em] mb-6 text-white text-lg">Comms</h4>
+          <ul className="space-y-4 text-sm font-mono text-muted-foreground uppercase tracking-wider">
+            <li><Link href="/support" className="hover:text-primary transition-colors">Contact Command</Link></li>
+            <li><Link href="/pages/faq" className="hover:text-primary transition-colors">Intel (FAQ)</Link></li>
+            <li><Link href="/pages/shipping-policy" className="hover:text-primary transition-colors">Deployment</Link></li>
+            <li><Link href="/pages/return-policy" className="hover:text-primary transition-colors">Returns</Link></li>
           </ul>
         </div>
       </div>
-      <div className="container mx-auto px-4 mt-12 pt-8 border-t border-border/50 text-xs font-mono text-muted-foreground flex flex-col md:flex-row justify-between items-center">
+      <div className="container mx-auto px-6 md:px-12 mt-20 pt-8 border-t border-white/5 text-xs font-mono text-muted-foreground flex flex-col md:flex-row justify-between items-center uppercase tracking-widest">
         <p>&copy; {new Date().getFullYear()} {settings?.businessName || 'Evolve Performance'}. All rights reserved.</p>
-        <div className="flex gap-4 mt-4 md:mt-0">
-          <Link href="/pages/privacy" className="hover:text-white">Privacy</Link>
-          <Link href="/pages/terms" className="hover:text-white">Terms</Link>
+        <div className="flex gap-8 mt-6 md:mt-0">
+          <Link href="/pages/privacy" className="hover:text-white transition-colors">Privacy</Link>
+          <Link href="/pages/terms" className="hover:text-white transition-colors">Terms</Link>
         </div>
       </div>
     </footer>

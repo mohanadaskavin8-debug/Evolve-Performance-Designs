@@ -9,6 +9,7 @@ import type { ReturnLineItem } from './returnLineItem';
 
 export interface ReturnRequestInput {
   orderId: number;
+  /** @minItems 1 */
   items: ReturnLineItem[];
   reason: string;
   preferExchange?: boolean;

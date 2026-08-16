@@ -133,6 +133,7 @@ export * from './productDetail';
 export * from './productImage';
 export * from './productListResponse';
 export * from './productVariant';
+export * from './removeCartItemParams';
 export * from './returnLineItem';
 export * from './returnRequest';
 export * from './returnRequestInput';

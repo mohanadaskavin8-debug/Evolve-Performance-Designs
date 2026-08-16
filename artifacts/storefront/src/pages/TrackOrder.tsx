@@ -1,117 +1,121 @@
 import { useState } from 'react';
 import { useLookupTracking } from '@workspace/api-client-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, Package, Truck, CheckCircle2, Clock } from 'lucide-react';
-import { useUser } from '@clerk/react';
+import { useLocation } from 'wouter';
+import { Search, Package, MapPin, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function TrackOrder() {
-  const { user } = useUser();
-  const [email, setEmail] = useState(user?.primaryEmailAddress?.emailAddress || '');
   const [orderNumber, setOrderNumber] = useState('');
-  
-  const [queryParams, setQueryParams] = useState<{orderNumber: string, email: string} | null>(null);
+  const [email, setEmail] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const { data: timeline, isLoading, error } = useLookupTracking(
-    (queryParams || { orderNumber: '', email: '' }), 
-    { query: { queryKey: ['tracking', queryParams?.orderNumber, queryParams?.email], enabled: !!queryParams } }
+  const { data: tracking, isLoading, error } = useLookupTracking(
+    { orderNumber, email },
+    { query: { enabled: hasSearched, queryKey: ['tracking', orderNumber, email], retry: false } }
   );
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !orderNumber) return;
-    setQueryParams({ orderNumber, email });
+    if (orderNumber && email) {
+      setHasSearched(true);
+    }
   };
 
   return (
-    <div className="container mx-auto px-4 py-20 max-w-4xl">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-6xl font-display font-bold uppercase tracking-tight mb-4">
-          Track Deployment
+    <div className="min-h-screen bg-background pt-32 pb-24">
+      <div className="container mx-auto px-6 md:px-12 max-w-4xl">
+        <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-[0.2em] text-white mb-6 text-center">
+          Track Ops
         </h1>
-        <p className="font-mono text-muted-foreground">Monitor the status of your inbound artifacts.</p>
-      </div>
+        <div className="w-24 h-1 bg-primary mx-auto mb-16" />
 
-      <div className="bg-card border border-border rounded-2xl p-6 md:p-10 mb-12">
-        <form onSubmit={handleTrack} className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-xs font-display uppercase tracking-widest text-muted-foreground mb-2">Order Number</label>
-            <Input 
-              placeholder="EP-..." 
-              className="h-14 font-mono uppercase bg-background"
-              value={orderNumber}
-              onChange={e => setOrderNumber(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-display uppercase tracking-widest text-muted-foreground mb-2">Email Address</label>
-            <Input 
-              type="email"
-              placeholder="EMAIL@EXAMPLE.COM" 
-              className="h-14 font-mono uppercase bg-background"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex items-end">
-            <Button type="submit" size="lg" className="h-14 font-display uppercase tracking-widest w-full md:w-auto px-8" disabled={isLoading}>
-              {isLoading ? 'SCANNING...' : 'TRACK'}
-            </Button>
-          </div>
-        </form>
-      </div>
-
-      {error && (
-        <div className="p-6 bg-destructive/10 border border-destructive/20 text-destructive font-mono text-center rounded-xl mb-12">
-          Order not found. Please verify your details.
+        <div className="border border-white/10 bg-white/[0.02] p-8 md:p-12 mb-16">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-2">
+              <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Order ID</label>
+              <input 
+                type="text" 
+                placeholder="EV-12345"
+                value={orderNumber}
+                onChange={(e) => { setOrderNumber(e.target.value); setHasSearched(false); }}
+                className="w-full bg-black border border-white/20 px-4 py-3 text-white font-mono placeholder:text-white/20 focus:outline-none focus:border-primary transition-colors"
+                required
+              />
+            </div>
+            <div className="flex-1 space-y-2">
+              <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Comms (Email)</label>
+              <input 
+                type="email" 
+                placeholder="operative@domain.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setHasSearched(false); }}
+                className="w-full bg-black border border-white/20 px-4 py-3 text-white font-mono placeholder:text-white/20 focus:outline-none focus:border-primary transition-colors"
+                required
+              />
+            </div>
+            <div className="flex items-end">
+              <button 
+                type="submit"
+                disabled={isLoading}
+                className="bg-white text-black px-8 py-3 font-mono font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-colors h-[46px] w-full md:w-auto flex items-center justify-center gap-2"
+              >
+                {isLoading ? <span className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <><Search className="w-4 h-4" /> Locate</>}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
 
-      {timeline && (
-        <div className="bg-card border border-border rounded-2xl p-6 md:p-10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-            <Truck className="w-64 h-64" />
+        {error && hasSearched && (
+          <div className="border border-destructive/50 bg-destructive/10 text-destructive p-6 font-mono text-sm uppercase tracking-widest text-center">
+            Signal lost. Invalid Order ID or Email provided.
           </div>
-          
-          <div className="relative z-10">
-            <div className="flex justify-between items-end mb-10 border-b border-border pb-6">
+        )}
+
+        {tracking && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border border-white/10 bg-black p-8 md:p-12"
+          >
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 border-b border-white/10 pb-8">
               <div>
-                <h3 className="font-display font-bold uppercase tracking-widest text-2xl mb-1">Status: <span className="text-primary">{timeline.status}</span></h3>
-                <p className="font-mono text-muted-foreground">Carrier: {timeline.carrier || 'Pending'} • Tracking: {timeline.trackingNumber || 'Pending'}</p>
+                <h3 className="font-display font-bold uppercase tracking-[0.15em] text-white text-2xl mb-2">
+                  Order {tracking.orderNumber}
+                </h3>
+                <p className="font-mono text-xs uppercase tracking-widest text-primary">Status: {tracking.status}</p>
               </div>
-              {timeline.trackingUrl && (
-                <Button variant="outline" size="sm" className="font-mono uppercase text-xs" asChild>
-                  <a href={timeline.trackingUrl} target="_blank" rel="noopener noreferrer">View at Carrier</a>
-                </Button>
-              )}
+              <div className="font-mono text-sm uppercase tracking-widest text-muted-foreground text-left md:text-right">
+                {tracking.carrier && <p>Carrier: <span className="text-white">{tracking.carrier}</span></p>}
+                {tracking.trackingNumber && <p>Tracking: <span className="text-white">{tracking.trackingNumber}</span></p>}
+              </div>
             </div>
 
-            <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-border">
-              {timeline.events.map((event, idx) => {
-                const isCompleted = event.isCompleted;
-                const isCurrent = event.isCurrent;
+            <div className="relative border-l border-white/20 ml-4 md:ml-8 space-y-12">
+              {tracking.events.map((event, index) => {
+                const Icon = event.isCompleted ? CheckCircle : event.isCurrent ? Package : MapPin;
+                const isPast = event.isCompleted || event.isCurrent;
                 
                 return (
-                  <div key={idx} className={`relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group ${isCompleted ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-card bg-background z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
-                      {isCompleted ? <CheckCircle2 className="w-5 h-5 text-primary" /> : <Clock className="w-5 h-5 text-muted-foreground" />}
+                  <div key={index} className="relative pl-10">
+                    <div className={`absolute -left-[18px] p-1 rounded-full bg-black border-2 ${isPast ? 'border-primary text-primary' : 'border-white/20 text-white/20'}`}>
+                      <Icon className="w-6 h-6" />
                     </div>
-                    <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-background p-4 rounded-xl border ${isCurrent ? 'border-primary shadow-[0_0_15px_rgba(255,0,0,0.2)]' : 'border-border'}`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <h4 className="font-display font-bold uppercase tracking-widest text-foreground">{event.label}</h4>
-                        {event.timestamp && <span className="font-mono text-xs text-muted-foreground">{new Date(event.timestamp).toLocaleDateString()}</span>}
-                      </div>
-                      <p className="font-mono text-sm text-muted-foreground">{event.description}</p>
-                    </div>
+                    <h4 className={`font-display font-bold uppercase tracking-widest text-lg mb-1 ${isPast ? 'text-white' : 'text-muted-foreground'}`}>
+                      {event.label}
+                    </h4>
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                      {event.description}
+                    </p>
+                    {event.timestamp && (
+                      <p className="font-mono text-xs text-white/50">{new Date(event.timestamp).toLocaleString()}</p>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }

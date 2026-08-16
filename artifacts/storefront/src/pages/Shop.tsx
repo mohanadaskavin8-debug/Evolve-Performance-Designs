@@ -1,99 +1,111 @@
-import { useState } from 'react';
 import { useListProducts, useListCollections } from '@workspace/api-client-react';
 import { ProductCard } from '@/components/ProductCard';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'wouter';
+import { useEffect, useState } from 'react';
+import { Link } from 'wouter';
+import { motion } from 'framer-motion';
 
 export default function Shop() {
-  const [search, setSearch] = useState('');
-  
+  const [location] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const initialCollection = searchParams.get('collection') || undefined;
+  const collectionSlug = searchParams.get('collection');
   
-  const [activeCollection, setActiveCollection] = useState<string | undefined>(initialCollection);
+  const [activeTheme, setActiveTheme] = useState<string | null>(null);
 
-  const { data: productsData, isLoading } = useListProducts(
-    { collection: activeCollection === 'all' ? undefined : activeCollection, search }, 
-    { query: { queryKey: ['products', activeCollection, search] } }
-  );
-  
-  const { data: collections } = useListCollections({ query: { queryKey: ['collections'] } });
+  const { data, isLoading } = useListProducts({
+    collection: collectionSlug || undefined,
+    limit: 50
+  });
+
+  const { data: collections } = useListCollections();
+
+  // Extract unique themes from all products; theme filtering happens client-side
+  const availableThemes = Array.from(new Set(data?.products.map(p => p.theme).filter(Boolean) as string[]));
+  const visibleProducts = (data?.products ?? []).filter(p => !activeTheme || p.theme === activeTheme);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-12">
-        <h1 className="text-4xl md:text-6xl font-display font-bold uppercase tracking-tight mb-6">
-          The Armory
-        </h1>
-        
-        <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center border-b border-border pb-8">
-          <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
-            <Button 
-              variant={!activeCollection || activeCollection === 'all' ? 'default' : 'outline'}
-              onClick={() => setActiveCollection('all')}
-              className="font-mono uppercase tracking-widest text-xs"
-            >
-              All Gear
-            </Button>
-            {collections?.map(c => (
-              <Button 
-                key={c.id}
-                variant={activeCollection === c.slug ? 'default' : 'outline'}
-                onClick={() => setActiveCollection(c.slug)}
-                className="font-mono uppercase tracking-widest text-xs whitespace-nowrap"
-              >
-                {c.name}
-              </Button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-background pt-32 pb-24">
+      <div className="container mx-auto px-6 md:px-12">
+        {/* Header */}
+        <div className="mb-16">
+          <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-[0.2em] text-white mb-6">
+            Armory / {collectionSlug ? collectionSlug.replace('-', ' ') : 'All Gear'}
+          </h1>
+          <div className="w-24 h-1 bg-primary mb-8" />
           
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="SEARCH GEAR..." 
-              className="pl-10 font-mono uppercase bg-card border-border h-10"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/10 pb-8">
+            {/* Collections Nav */}
+            <div className="flex flex-wrap gap-6 font-mono text-sm uppercase tracking-widest">
+              <Link 
+                href="/products" 
+                className={`${!collectionSlug ? 'text-white border-b border-primary pb-1' : 'text-muted-foreground hover:text-white'} transition-colors`}
+              >
+                All Series
+              </Link>
+              {collections?.map(c => (
+                <Link 
+                  key={c.id} 
+                  href={`/products?collection=${c.slug}`}
+                  className={`${collectionSlug === c.slug ? 'text-white border-b border-primary pb-1' : 'text-muted-foreground hover:text-white'} transition-colors`}
+                >
+                  {c.name}
+                </Link>
+              ))}
+            </div>
+
+            {/* Themes Filter (Optional if present) */}
+            {availableThemes.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                <button 
+                  onClick={() => setActiveTheme(null)}
+                  className={`px-4 py-2 border font-mono text-xs uppercase tracking-widest transition-colors ${!activeTheme ? 'border-primary bg-primary/10 text-white' : 'border-white/20 text-muted-foreground hover:border-white/50'}`}
+                >
+                  All Themes
+                </button>
+                {availableThemes.map(theme => (
+                  <button 
+                    key={theme}
+                    onClick={() => setActiveTheme(theme)}
+                    className={`px-4 py-2 border font-mono text-xs uppercase tracking-widest transition-colors ${activeTheme === theme ? 'border-primary bg-primary/10 text-white' : 'border-white/20 text-muted-foreground hover:border-white/50'}`}
+                  >
+                    {theme}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="aspect-[4/5] bg-card border border-border animate-pulse rounded-xl" />)}
-        </div>
-      ) : (
-        <motion.div 
-          layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-        >
-          <AnimatePresence>
-            {productsData?.products.map(product => (
-              <motion.div 
-                key={product.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
-                <ProductCard product={product} />
-              </motion.div>
+        {/* Product List */}
+        {isLoading ? (
+          <div className="flex flex-col gap-12">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-full h-[220px] bg-white/5 animate-pulse border border-white/10" />
             ))}
-          </AnimatePresence>
-          {productsData?.products.length === 0 && (
-            <div className="col-span-full py-24 text-center flex flex-col items-center">
-              <div className="text-4xl mb-4 opacity-20">🗡️</div>
-              <p className="font-mono text-muted-foreground uppercase tracking-widest">
-                No gear found matching your criteria.
-              </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-16">
+              {visibleProducts.map((product, i) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                >
+                  <ProductCard product={product} />
+                </motion.div>
+              ))}
             </div>
-          )}
-        </motion.div>
-      )}
+
+            {visibleProducts.length === 0 && (
+              <div className="py-32 text-center border border-white/10 bg-black/50 backdrop-blur-sm">
+                <p className="font-mono text-muted-foreground uppercase tracking-widest">No gear available in this sector.</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -114,6 +114,7 @@ import type {
   ProductDetail,
   ProductImage,
   ProductListResponse,
+  RemoveCartItemParams,
   ReturnRequest,
   ReturnRequestInput,
   Review,
@@ -1000,20 +1001,29 @@ export const useUpdateCartItem = <TError = ErrorType<unknown>,
       return useMutation(getUpdateCartItemMutationOptions(options));
     }
 
-export const getRemoveCartItemUrl = (itemId: string,) => {
+export const getRemoveCartItemUrl = (itemId: string,
+    params: RemoveCartItemParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/cart/items/${itemId}`
+  return stringifiedParams.length > 0 ? `/api/cart/items/${itemId}?${stringifiedParams}` : `/api/cart/items/${itemId}`
 }
 
 /**
  * @summary Remove item from cart (releases reservation)
  */
-export const removeCartItem = async (itemId: string, options?: Parameters<typeof customFetch>[1]): Promise<Cart> => {
+export const removeCartItem = async (itemId: string,
+    params: RemoveCartItemParams, options?: Parameters<typeof customFetch>[1]): Promise<Cart> => {
 
-  return customFetch<Cart>(getRemoveCartItemUrl(itemId),
+  return customFetch<Cart>(getRemoveCartItemUrl(itemId,params),
   {
     ...options,
     method: 'DELETE'
@@ -1027,8 +1037,8 @@ export const removeCartItem = async (itemId: string, options?: Parameters<typeof
 
 
 export const getRemoveCartItemMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeCartItem>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeCartItem>>, TError,{itemId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeCartItem>>, TError,{itemId: string;params: RemoveCartItemParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeCartItem>>, TError,{itemId: string;params: RemoveCartItemParams}, TContext> => {
 
 const mutationKey = ['removeCartItem'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1040,10 +1050,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeCartItem>>, {itemId: string}> = (props) => {
-          const {itemId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeCartItem>>, {itemId: string;params: RemoveCartItemParams}> = (props) => {
+          const {itemId,params} = props ?? {};
 
-          return  removeCartItem(itemId,requestOptions)
+          return  removeCartItem(itemId,params,requestOptions)
         }
 
 
@@ -1061,11 +1071,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Remove item from cart (releases reservation)
  */
 export const useRemoveCartItem = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeCartItem>>, TError,{itemId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeCartItem>>, TError,{itemId: string;params: RemoveCartItemParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof removeCartItem>>,
         TError,
-        {itemId: string},
+        {itemId: string;params: RemoveCartItemParams},
         TContext
       > => {
       return useMutation(getRemoveCartItemMutationOptions(options));

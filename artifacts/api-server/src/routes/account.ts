@@ -128,6 +128,16 @@ router.post("/returns", async (req, res) => {
 
   const { orderId, items, reason, preferExchange } = req.body;
 
+  // A return must specify at least one item — reject empty submissions
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "At least one return item is required" });
+    return;
+  }
+  if (!reason || typeof reason !== "string" || !reason.trim()) {
+    res.status(400).json({ error: "A return reason is required" });
+    return;
+  }
+
   // Ownership check: verify order belongs to this customer
   const [order] = await db
     .select({ id: ordersTable.id, orderNumber: ordersTable.orderNumber })
@@ -136,7 +146,7 @@ router.post("/returns", async (req, res) => {
   if (!order) { res.status(403).json({ error: "Order not found or does not belong to your account" }); return; }
 
   // Validate that every submitted orderItemId belongs to this specific order
-  if (Array.isArray(items) && items.length > 0) {
+  {
     for (const item of items) {
       const [oi] = await db
         .select({ id: orderItemsTable.id })

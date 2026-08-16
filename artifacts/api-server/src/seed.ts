@@ -25,9 +25,9 @@ import {
 } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
-// Product image placeholder — will be replaced with real images by design subagent / object storage
-const IMG = (name: string) =>
-  `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80&auto=format`; // fallback
+// Real product strap designs (cropped from the owner's provided artwork).
+// Served from the storefront's public dir; storefront is the root-path artifact.
+const IMG = (slug: string) => `/straps/${slug}.jpg`;
 
 const STRAP_DESIGNS = [
   { slug: "jdm-night-city", name: "JDM Night City", theme: "JDM / Drift / Urban Night", priceInCents: 2999 },

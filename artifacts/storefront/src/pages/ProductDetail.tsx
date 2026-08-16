@@ -1,228 +1,253 @@
-import { useState } from 'react';
-import { useGetProductBySlug, useListProductReviews, useAddCartItem } from '@workspace/api-client-react';
+import { useRoute } from 'wouter';
+import { useGetProductBySlug, useAddCartItem, useListProductReviews, useGetCart } from '@workspace/api-client-react';
 import { getProductImage, formatPrice, getCartSessionId } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { ChevronRight, ArrowLeft, Shield, Truck, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Link } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { getGetCartQueryKey } from '@workspace/api-client-react';
 
-export default function ProductDetail({ params }: { params: { slug: string } }) {
-  const { slug } = params;
-  const { data: product, isLoading } = useGetProductBySlug(slug, { query: { queryKey: ['product', slug], enabled: !!slug } });
-  const { data: reviews } = useListProductReviews(slug, { query: { queryKey: ['reviews', slug], enabled: !!slug } });
-  
-  const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [activeImage, setActiveImage] = useState<string | null>(null);
-  
-  const addCartItem = useAddCartItem();
+export default function ProductDetail() {
+  const [, params] = useRoute('/products/:slug');
+  const slug = params?.slug || '';
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: product, isLoading, error } = useGetProductBySlug(slug, {
+    query: { enabled: !!slug, queryKey: ['product', slug] }
+  });
+
+  const { data: reviews } = useListProductReviews(slug, {
+    query: { enabled: !!slug, queryKey: ['product-reviews', slug] }
+  });
+
+  const addCartItem = useAddCartItem();
+  
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [adding, setAdding] = useState(false);
+
+  // Initialize selected variant when product loads
+  if (product && !selectedVariantId && product.variants.length > 0) {
+    const defaultVariant = product.variants.find(v => v.availableQuantity > 0) || product.variants[0];
+    setSelectedVariantId(defaultVariant.id);
+  }
+
+  const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
+  const isOutOfStock = selectedVariant?.availableQuantity === 0;
+
+  const handleAddToCart = async () => {
+    if (!selectedVariantId) return;
+    setAdding(true);
+    try {
+      await addCartItem.mutateAsync({
+        data: {
+          sessionId: getCartSessionId(),
+          variantId: selectedVariantId,
+          quantity
+        }
+      });
+      queryClient.invalidateQueries({ queryKey: getGetCartQueryKey({ sessionId: getCartSessionId() }) });
+      toast({
+        title: "Added to loadout",
+        description: `${quantity}x ${product?.name} ready for deployment.`,
+      });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Failed to add item.",
+      });
+    } finally {
+      setAdding(false);
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-2 gap-16">
-        <div className="aspect-[4/5] bg-card border border-border rounded-2xl animate-pulse" />
-        <div className="flex flex-col gap-6">
-          <div className="h-12 bg-card rounded-md w-3/4 animate-pulse" />
-          <div className="h-8 bg-card rounded-md w-1/4 animate-pulse" />
-          <div className="h-32 bg-card rounded-md animate-pulse" />
-        </div>
+      <div className="min-h-screen pt-32 bg-background flex justify-center">
+        <div className="w-16 h-16 border-t-2 border-primary rounded-full animate-spin"></div>
       </div>
     );
   }
-  
-  if (!product) {
+
+  if (error || !product) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center">
-        <h1 className="text-4xl font-display font-bold uppercase mb-4 text-destructive">404</h1>
-        <p className="font-mono text-muted-foreground uppercase">Artifact not found in the database.</p>
+      <div className="min-h-screen pt-32 bg-background text-center flex flex-col items-center">
+        <AlertTriangle className="w-16 h-16 text-destructive mb-6" />
+        <h1 className="text-3xl font-display font-bold uppercase tracking-widest text-white mb-4">Intel Not Found</h1>
+        <p className="font-mono text-muted-foreground uppercase tracking-widest mb-8">This gear does not exist or has been redacted.</p>
+        <Link href="/products" className="bg-white text-black px-8 py-3 font-mono uppercase tracking-widest hover:bg-primary hover:text-white transition-colors">
+          Return to Armory
+        </Link>
       </div>
     );
   }
 
-  const primaryVariant = selectedVariant 
-    ? product.variants.find(v => v.id === selectedVariant) 
-    : (product.variants.find(v => v.availableQuantity > 0) || product.variants[0]);
-
-  const displayImage = activeImage || product.images[0]?.url || getProductImage(product.slug);
-
-  const handleAddToCart = () => {
-    if (!primaryVariant) return;
-    
-    addCartItem.mutate({
-      data: {
-        sessionId: getCartSessionId(),
-        variantId: primaryVariant.id,
-        quantity,
-      }
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Added to Inventory",
-          description: `${quantity}x ${product.name} acquired.`,
-        });
-      },
-      onError: (err) => {
-        toast({
-          title: "Failed to Add",
-          description: (err.data as any)?.error || err.message || "Could not add to cart.",
-          variant: "destructive"
-        });
-      }
-    });
-  };
+  const cinematicImage = getProductImage(product.slug);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+    <div className="min-h-screen bg-background pt-24 pb-32">
+      {/* Breadcrumbs */}
+      <div className="container mx-auto px-6 md:px-12 py-6 flex items-center gap-4 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+        <Link href="/products" className="hover:text-white transition-colors flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Armory
+        </Link>
+        <ChevronRight className="w-3 h-3" />
+        <span className="text-white">{product.name}</span>
+      </div>
+
+      {/* Cinematic Bleed Header */}
+      <div className="w-full relative h-[30vh] md:h-[50vh] bg-black border-y border-white/10 flex items-center justify-center overflow-hidden mb-16">
+        <img 
+          src={cinematicImage} 
+          alt={product.name}
+          className="strap-panorama absolute inset-0 opacity-80"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+      </div>
+
+      <div className="container mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-16">
         
-        {/* Visuals */}
-        <div className="flex flex-col gap-4">
-          <motion.div 
-            className="aspect-[4/5] rounded-2xl overflow-hidden bg-card border border-border relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <img 
-              key={displayImage}
-              src={displayImage}
-              alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?q=80&w=1471&auto=format&fit=crop' }}
-            />
-          </motion.div>
-          
-          {(product.images.length > 1 || product.images.length === 0) && (
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-              <button 
-                onClick={() => setActiveImage(getProductImage(product.slug))}
-                className={`w-20 h-24 sm:w-24 sm:h-32 rounded-lg overflow-hidden border-2 cursor-pointer flex-shrink-0 transition-colors ${!activeImage || activeImage === getProductImage(product.slug) ? 'border-primary' : 'border-border opacity-50 hover:opacity-100'}`}
-              >
-                <img src={getProductImage(product.slug)} alt="Theme" className="w-full h-full object-cover" />
-              </button>
-              {product.images.map(img => (
+        {/* Left Column: Details & Philosophy */}
+        <div className="lg:col-span-7 space-y-12">
+          <div>
+            {product.theme && (
+              <span className="inline-block border border-white/20 bg-white/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-4">
+                Theme: {product.theme}
+              </span>
+            )}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold uppercase tracking-[0.1em] text-white mb-4 leading-tight">
+              {product.name}
+            </h1>
+            <div className="text-2xl font-mono font-bold text-white tracking-wider mb-8">
+              {selectedVariant ? formatPrice(selectedVariant.priceInCents) : formatPrice(product.variants[0]?.priceInCents)}
+            </div>
+            
+            <div className="prose prose-invert prose-p:font-mono prose-p:text-muted-foreground prose-p:uppercase prose-p:tracking-wider prose-p:leading-relaxed max-w-none">
+              <p>{product.description}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-12">
+            <div className="border border-white/5 bg-white/[0.02] p-6">
+              <Shield className="w-6 h-6 text-primary mb-4" />
+              <h4 className="font-display font-bold uppercase tracking-widest text-white mb-2">Specs</h4>
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">{product.materials || 'Military-grade webbing, reinforced stitching, edge-to-edge sublimation print.'}</p>
+            </div>
+            <div className="border border-white/5 bg-white/[0.02] p-6">
+              <RotateCcw className="w-6 h-6 text-primary mb-4" />
+              <h4 className="font-display font-bold uppercase tracking-widest text-white mb-2">Deployment</h4>
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">{product.shippingInfo || 'Ships within 48h. Lifetime structural warranty.'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Configurator */}
+        <div className="lg:col-span-5">
+          <div className="border border-white/10 bg-black/40 backdrop-blur-xl p-8 sticky top-32">
+            <h3 className="font-display font-bold uppercase tracking-widest text-white mb-8 border-b border-white/10 pb-4">Configuration</h3>
+            
+            {/* Variants */}
+            {product.variants.length > 1 && (
+              <div className="mb-8">
+                <label className="block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">Select Variant</label>
+                <div className="flex flex-wrap gap-3">
+                  {product.variants.map((variant) => {
+                    const isSelected = selectedVariantId === variant.id;
+                    const isAvail = variant.availableQuantity > 0;
+                    return (
+                      <button
+                        key={variant.id}
+                        disabled={!isAvail}
+                        onClick={() => setSelectedVariantId(variant.id)}
+                        className={`px-4 py-3 font-mono text-xs uppercase tracking-widest transition-all ${
+                          isSelected 
+                            ? 'bg-primary text-white border border-primary' 
+                            : isAvail 
+                              ? 'bg-transparent border border-white/20 text-white hover:border-white/60' 
+                              : 'bg-white/5 border border-white/5 text-white/30 cursor-not-allowed line-through'
+                        }`}
+                      >
+                        {variant.size || variant.color || variant.sku}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Quantity */}
+            <div className="mb-8">
+              <label className="block font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">Quantity</label>
+              <div className="flex items-center border border-white/20 w-max">
                 <button 
-                  key={img.id} 
-                  onClick={() => setActiveImage(img.url)}
-                  className={`w-20 h-24 sm:w-24 sm:h-32 rounded-lg overflow-hidden border-2 cursor-pointer flex-shrink-0 transition-colors ${activeImage === img.url ? 'border-primary' : 'border-border opacity-50 hover:opacity-100'}`}
-                >
-                  <img src={img.url} alt={product.name} className="w-full h-full object-cover" />
-                </button>
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="px-4 py-2 text-white hover:bg-white/10 transition-colors font-mono"
+                  disabled={isOutOfStock}
+                >-</button>
+                <div className="w-12 text-center font-mono text-white text-sm">{quantity}</div>
+                <button 
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="px-4 py-2 text-white hover:bg-white/10 transition-colors font-mono"
+                  disabled={isOutOfStock || (selectedVariant && quantity >= selectedVariant.availableQuantity)}
+                >+</button>
+              </div>
+            </div>
+
+            {/* Action */}
+            <button
+              onClick={handleAddToCart}
+              disabled={isOutOfStock || adding}
+              className={`w-full py-4 font-mono font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                isOutOfStock
+                  ? 'bg-white/5 text-white/40 cursor-not-allowed'
+                  : 'bg-white text-black hover:bg-primary hover:text-white'
+              }`}
+            >
+              {adding ? (
+                <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : isOutOfStock ? (
+                'Inventory Depleted'
+              ) : (
+                'Initialize Loadout'
+              )}
+            </button>
+            
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs font-mono text-muted-foreground uppercase tracking-widest">
+              <Truck className="w-4 h-4" /> Secure Global Shipping
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Reviews Section */}
+      {reviews && reviews.length > 0 && (
+        <div className="container mx-auto px-6 md:px-12 mt-32">
+          <div className="border-t border-white/10 pt-16">
+            <h2 className="text-2xl font-display font-bold uppercase tracking-[0.2em] text-white mb-12 text-center">Field Reports</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {reviews.map(review => (
+                <div key={review.id} className="border border-white/5 bg-white/[0.02] p-8">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} className={`text-lg ${i < review.rating ? 'text-primary' : 'text-white/20'}`}>★</span>
+                    ))}
+                  </div>
+                  <h4 className="font-display font-bold uppercase tracking-widest text-white mb-3 text-lg">{review.title}</h4>
+                  <p className="font-mono text-sm text-muted-foreground uppercase tracking-wider leading-relaxed mb-6">{review.body}</p>
+                  <div className="font-mono text-xs text-white/40 uppercase tracking-widest border-t border-white/5 pt-4">
+                    Op: {review.reviewerName} {review.isVerified && <span className="text-primary ml-2">✓ Verified</span>}
+                  </div>
+                </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
-        
-        {/* Info & Actions */}
-        <motion.div 
-          className="flex flex-col"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          {product.theme && (
-            <Badge className="w-fit mb-4 font-mono uppercase tracking-widest">{product.theme}</Badge>
-          )}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold uppercase tracking-tight mb-2">
-            {product.name}
-          </h1>
-          <div className="text-2xl font-mono text-primary font-bold mb-6">
-            {formatPrice(primaryVariant?.priceInCents)}
-          </div>
-          
-          <p className="text-muted-foreground font-mono mb-8 leading-relaxed text-lg">
-            {product.description}
-          </p>
-          
-          {product.variants.length > 1 && (
-            <div className="mb-8 p-6 bg-card border border-border rounded-xl">
-              <label className="block text-sm font-display uppercase tracking-widest mb-4">Select Specification</label>
-              <div className="flex flex-wrap gap-3">
-                {product.variants.map(v => {
-                  const isSelected = selectedVariant ? selectedVariant === v.id : primaryVariant?.id === v.id;
-                  return (
-                    <Button
-                      key={v.id}
-                      variant={isSelected ? 'default' : 'outline'}
-                      onClick={() => setSelectedVariant(v.id)}
-                      className={`font-mono uppercase ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                      disabled={v.availableQuantity <= 0}
-                    >
-                      {v.size || v.color || 'Standard'}
-                      {v.availableQuantity <= 0 && ' (Sold Out)'}
-                    </Button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex flex-col sm:flex-row items-center gap-4 mb-12">
-            <div className="flex items-center border border-border rounded-md bg-card h-14 w-full sm:w-auto shrink-0">
-              <button className="px-6 h-full hover:text-primary transition-colors font-mono text-xl" onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-              <span className="font-mono w-12 text-center text-lg">{quantity}</span>
-              <button className="px-6 h-full hover:text-primary transition-colors font-mono text-xl" onClick={() => setQuantity(quantity + 1)}>+</button>
-            </div>
-            <Button 
-              size="lg" 
-              className="flex-1 h-14 font-display uppercase tracking-widest text-lg w-full relative overflow-hidden group"
-              onClick={handleAddToCart}
-              disabled={addCartItem.isPending || !primaryVariant || primaryVariant.availableQuantity <= 0}
-            >
-              <span className="relative z-10">{addCartItem.isPending ? 'EQUIPPING...' : 'ADD TO ARSENAL'}</span>
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-            </Button>
-          </div>
-          
-          <Tabs defaultValue="details" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 bg-card border border-border rounded-lg h-12 p-1 mb-6">
-              <TabsTrigger value="details" className="font-display uppercase tracking-widest text-xs data-[state=active]:bg-background">Details</TabsTrigger>
-              <TabsTrigger value="shipping" className="font-display uppercase tracking-widest text-xs data-[state=active]:bg-background">Logistics</TabsTrigger>
-              <TabsTrigger value="reviews" className="font-display uppercase tracking-widest text-xs data-[state=active]:bg-background">Intel ({reviews?.length || 0})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="details" className="font-mono text-sm text-muted-foreground space-y-4 leading-relaxed">
-              <div className="grid grid-cols-2 gap-4">
-                {product.materials && (
-                  <div className="p-4 bg-card rounded-lg border border-border">
-                    <strong className="text-foreground block mb-1 uppercase font-display tracking-wider">Materials</strong> 
-                    {product.materials}
-                  </div>
-                )}
-                {product.benefits && (
-                  <div className="p-4 bg-card rounded-lg border border-border">
-                    <strong className="text-foreground block mb-1 uppercase font-display tracking-wider">Benefits</strong> 
-                    {product.benefits}
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="shipping" className="font-mono text-sm text-muted-foreground p-4 bg-card rounded-lg border border-border">
-              {product.shippingInfo || 'Global logistics network engaged. Standard deployment time: 3-5 standard cycles.'}
-            </TabsContent>
-            <TabsContent value="reviews" className="font-mono text-sm text-muted-foreground space-y-4">
-              {reviews?.length ? (
-                <div className="space-y-4">
-                  {reviews.map(review => (
-                    <div key={review.id} className="p-4 bg-card border border-border rounded-lg">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="font-bold text-primary uppercase tracking-widest">{review.reviewerName}</span>
-                        <span className="text-primary tracking-widest">{'★'.repeat(review.rating)}{'☆'.repeat(5-review.rating)}</span>
-                      </div>
-                      <h4 className="font-bold mb-2 text-foreground font-display tracking-wider uppercase">{review.title}</h4>
-                      <p className="leading-relaxed">{review.body}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center border border-border rounded-lg bg-card">
-                  No field reports yet. Be the first to deploy with this gear.
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      </div>
+      )}
     </div>
   );
 }
