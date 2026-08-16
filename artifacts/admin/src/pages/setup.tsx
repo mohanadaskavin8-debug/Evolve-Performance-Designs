@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useAdminBootstrap } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAdminBootstrap, getAdminGetMeQueryKey } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import { ShieldAlert } from 'lucide-react';
 export default function SetupPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [secretKey, setSecretKey] = useState('');
   
   const bootstrap = useAdminBootstrap();
@@ -20,11 +22,14 @@ export default function SetupPage() {
     if (!secretKey.trim()) return;
 
     bootstrap.mutate({ data: { secretKey } }, {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({
           title: 'Setup Complete',
           description: 'You are now registered as an Owner.',
         });
+        // Refresh the admin check so the guard sees the new owner role
+        // before we navigate — otherwise it bounces back to /setup.
+        await queryClient.resetQueries({ queryKey: getAdminGetMeQueryKey() });
         setLocation('/dashboard');
       },
       onError: (err: any) => {
