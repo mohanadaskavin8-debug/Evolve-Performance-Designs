@@ -13,6 +13,7 @@ import newsletterRouter from "./newsletter";
 import contentRouter from "./content";
 import shippingRouter from "./shipping";
 import discountsRouter from "./discounts";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use("/newsletter", newsletterRouter);
 router.use("/content", contentRouter);
 router.use("/shipping", shippingRouter);
 router.use("/discounts", discountsRouter);
+router.use("/admin", adminRouter);
 
 export default router;

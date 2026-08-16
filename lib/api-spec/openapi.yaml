@@ -36,6 +36,8 @@ tags:
     description: Shipping zones and rates
   - name: discounts
     description: Discount codes
+  - name: admin
+    description: Admin portal — business operating system (RBAC protected)
 
 paths:
   /healthz:
@@ -758,6 +760,1196 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Discount"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Admin ─────────────────────────────────────────────────────────────────
+  /admin/me:
+    get:
+      operationId: adminGetMe
+      tags: [admin]
+      summary: Get current admin user info and role
+      responses:
+        "200":
+          description: Current admin user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMeResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users/bootstrap:
+    post:
+      operationId: adminBootstrap
+      tags: [admin]
+      summary: Bootstrap first owner account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserBootstrapInput"
+      responses:
+        "200":
+          description: Bootstrapped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List all admin users
+      responses:
+        "200":
+          description: Admin users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+    post:
+      operationId: adminInviteUser
+      tags: [admin]
+      summary: Invite a new admin user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserInviteInput"
+      responses:
+        "201":
+          description: Invited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{clerkUserId}:
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update admin user role
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+    delete:
+      operationId: adminRemoveUser
+      tags: [admin]
+      summary: Remove an admin user
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+
+  /admin/dashboard:
+    get:
+      operationId: adminGetDashboard
+      tags: [admin]
+      summary: Get dashboard metrics and attention feed
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
+  /admin/orders:
+    get:
+      operationId: adminListOrders
+      tags: [admin]
+      summary: List orders with filters
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: requiresReview
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrdersListResponse"
+
+  /admin/orders/{orderId}:
+    get:
+      operationId: adminGetOrder
+      tags: [admin]
+      summary: Get full order detail
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/orders/{orderId}/actions:
+    post:
+      operationId: adminOrderAction
+      tags: [admin]
+      summary: Perform lifecycle action on an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminOrderActionInput"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderDetail"
+        "400":
+          description: Invalid action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/returns:
+    get:
+      operationId: adminListReturns
+      tags: [admin]
+      summary: List return requests
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Returns list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReturnListResponse"
+
+  /admin/returns/{returnId}:
+    get:
+      operationId: adminGetReturn
+      tags: [admin]
+      summary: Get return detail
+      parameters:
+        - name: returnId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Return detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReturnDetail"
+
+  /admin/returns/{returnId}/actions:
+    post:
+      operationId: adminReturnAction
+      tags: [admin]
+      summary: Approve, deny, or process a return
+      parameters:
+        - name: returnId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminReturnActionInput"
+      responses:
+        "200":
+          description: Updated return
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReturnDetail"
+
+  /admin/products:
+    get:
+      operationId: adminListProducts
+      tags: [admin]
+      summary: List all products (all statuses)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductsListResponse"
+    post:
+      operationId: adminCreateProduct
+      tags: [admin]
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductDetail"
+
+  /admin/products/{productId}:
+    get:
+      operationId: adminGetProduct
+      tags: [admin]
+      summary: Get product detail
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductDetail"
+    patch:
+      operationId: adminUpdateProduct
+      tags: [admin]
+      summary: Update a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductDetail"
+
+  /admin/products/{productId}/actions:
+    post:
+      operationId: adminProductAction
+      tags: [admin]
+      summary: Publish, unpublish, archive, or restore a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductActionInput"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductDetail"
+
+  /admin/products/{productId}/variants:
+    post:
+      operationId: adminCreateVariant
+      tags: [admin]
+      summary: Add a variant to a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminVariantInput"
+      responses:
+        "201":
+          description: Created variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductVariant"
+
+  /admin/products/{productId}/variants/{variantId}:
+    patch:
+      operationId: adminUpdateVariant
+      tags: [admin]
+      summary: Update a variant
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminVariantUpdate"
+      responses:
+        "200":
+          description: Updated variant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductVariant"
+    delete:
+      operationId: adminDeleteVariant
+      tags: [admin]
+      summary: Delete a variant
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/products/{productId}/images:
+    post:
+      operationId: adminAddProductImage
+      tags: [admin]
+      summary: Add an image to a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminImageInput"
+      responses:
+        "201":
+          description: Created image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImage"
+
+  /admin/products/{productId}/images/{imageId}:
+    delete:
+      operationId: adminDeleteProductImage
+      tags: [admin]
+      summary: Delete a product image
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/inventory:
+    get:
+      operationId: adminListInventory
+      tags: [admin]
+      summary: List inventory by variant with stock levels
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            type: string
+            enum: [all, low_stock, out_of_stock]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Inventory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInventoryListResponse"
+
+  /admin/inventory/adjust:
+    post:
+      operationId: adminAdjustInventory
+      tags: [admin]
+      summary: Manually adjust stock for a variant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminInventoryAdjustInput"
+      responses:
+        "200":
+          description: Updated inventory item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInventoryItem"
+
+  /admin/inventory/history:
+    get:
+      operationId: adminInventoryHistory
+      tags: [admin]
+      summary: Get inventory transaction history
+      parameters:
+        - name: variantId
+          in: query
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryHistoryResult"
+
+  /admin/customers:
+    get:
+      operationId: adminListCustomers
+      tags: [admin]
+      summary: List customers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCustomersListResponse"
+
+  /admin/customers/{customerId}:
+    get:
+      operationId: adminGetCustomer
+      tags: [admin]
+      summary: Get customer detail with recent orders
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCustomerDetail"
+
+  /admin/discounts:
+    get:
+      operationId: adminListDiscounts
+      tags: [admin]
+      summary: List all discount codes
+      responses:
+        "200":
+          description: Discounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminDiscount"
+    post:
+      operationId: adminCreateDiscount
+      tags: [admin]
+      summary: Create a discount code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDiscountInput"
+      responses:
+        "201":
+          description: Created discount
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDiscount"
+
+  /admin/discounts/{discountId}:
+    patch:
+      operationId: adminUpdateDiscount
+      tags: [admin]
+      summary: Update a discount code
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDiscountUpdate"
+      responses:
+        "200":
+          description: Updated discount
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDiscount"
+    delete:
+      operationId: adminDeleteDiscount
+      tags: [admin]
+      summary: Delete a discount code
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/shipping/zones:
+    get:
+      operationId: adminListShippingZones
+      tags: [admin]
+      summary: List all shipping zones with rates
+      responses:
+        "200":
+          description: Shipping zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminShippingZone"
+    post:
+      operationId: adminCreateShippingZone
+      tags: [admin]
+      summary: Create a shipping zone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminShippingZoneInput"
+      responses:
+        "201":
+          description: Created zone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminShippingZone"
+
+  /admin/shipping/zones/{zoneId}:
+    patch:
+      operationId: adminUpdateShippingZone
+      tags: [admin]
+      summary: Update a shipping zone
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminShippingZoneUpdate"
+      responses:
+        "200":
+          description: Updated zone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminShippingZone"
+    delete:
+      operationId: adminDeleteShippingZone
+      tags: [admin]
+      summary: Delete a shipping zone
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/shipping/zones/{zoneId}/rates:
+    post:
+      operationId: adminCreateShippingRate
+      tags: [admin]
+      summary: Add a rate to a shipping zone
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminShippingRateInput"
+      responses:
+        "201":
+          description: Created rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminShippingRate"
+
+  /admin/shipping/zones/{zoneId}/rates/{rateId}:
+    patch:
+      operationId: adminUpdateShippingRate
+      tags: [admin]
+      summary: Update a shipping rate
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: rateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminShippingRateUpdate"
+      responses:
+        "200":
+          description: Updated rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminShippingRate"
+    delete:
+      operationId: adminDeleteShippingRate
+      tags: [admin]
+      summary: Delete a shipping rate
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: rateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/support:
+    get:
+      operationId: adminListSupport
+      tags: [admin]
+      summary: List support tickets
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Support tickets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSupportListResponse"
+
+  /admin/support/{ticketId}:
+    get:
+      operationId: adminGetSupportTicket
+      tags: [admin]
+      summary: Get support ticket detail
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSupportTicket"
+    patch:
+      operationId: adminUpdateSupportTicket
+      tags: [admin]
+      summary: Update ticket status or assignment
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSupportUpdateInput"
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSupportTicket"
+
+  /admin/reviews:
+    get:
+      operationId: adminListReviews
+      tags: [admin]
+      summary: List all reviews
+      parameters:
+        - name: isApproved
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReviewsListResponse"
+
+  /admin/reviews/{reviewId}/actions:
+    post:
+      operationId: adminReviewAction
+      tags: [admin]
+      summary: Approve or reject a review
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminReviewActionInput"
+      responses:
+        "200":
+          description: Updated review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReview"
+
+  /admin/content/pages:
+    get:
+      operationId: adminListContentPages
+      tags: [admin]
+      summary: List all content pages
+      responses:
+        "200":
+          description: Pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminContentPage"
+
+  /admin/content/pages/{pageKey}:
+    get:
+      operationId: adminGetContentPage
+      tags: [admin]
+      summary: Get a content page
+      parameters:
+        - name: pageKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminContentPage"
+    patch:
+      operationId: adminUpdateContentPage
+      tags: [admin]
+      summary: Update a content page
+      parameters:
+        - name: pageKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminContentPageUpdate"
+      responses:
+        "200":
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminContentPage"
+
+  /admin/content/homepage:
+    get:
+      operationId: adminGetHomepageSections
+      tags: [admin]
+      summary: Get homepage sections
+      responses:
+        "200":
+          description: Sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminHomepageSection"
+    put:
+      operationId: adminUpdateHomepageSections
+      tags: [admin]
+      summary: Update homepage sections order and visibility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminHomepageSectionsUpdate"
+      responses:
+        "200":
+          description: Updated sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminHomepageSection"
+
+  /admin/content/settings:
+    get:
+      operationId: adminGetSiteSettings
+      tags: [admin]
+      summary: Get all site settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+    patch:
+      operationId: adminUpdateSiteSettings
+      tags: [admin]
+      summary: Update site settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSiteSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+
+  /admin/activity:
+    get:
+      operationId: adminListActivity
+      tags: [admin]
+      summary: List activity log
+      parameters:
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: entityId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityLogResponse"
+
+  /admin/reports/sales:
+    get:
+      operationId: adminGetSalesReport
+      tags: [admin]
+      summary: Get sales report
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [today, week, month, quarter, year]
+      responses:
+        "200":
+          description: Sales report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSalesReport"
+
+
+  /admin/system/status:
+    get:
+      operationId: adminGetSystemStatus
+      tags: [admin]
+      summary: Get system health status
+      responses:
+        "200":
+          description: System status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSystemStatus"
+
+  /account/orders/{orderId}:
+    get:
+      operationId: getAccountOrderDetail
+      tags: [account]
+      summary: Get order detail for authenticated customer
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
         "404":
           description: Not found
           content:
@@ -1614,3 +2806,867 @@ components:
           type: ["integer", "null"]
         expiresAt:
           type: ["string", "null"]
+
+    # ── Admin ─────────────────────────────────────────────────────────────────
+    AdminDashboard:
+      type: object
+      required: [revenue, orders, customers, inventory, attentionItems, recentOrders, salesByDay]
+      properties:
+        revenue:
+          type: object
+          required: [todayInCents, weekInCents, monthInCents, monthGrowthPct]
+          properties:
+            todayInCents: { type: integer }
+            weekInCents: { type: integer }
+            monthInCents: { type: integer }
+            monthGrowthPct: { type: number }
+        orders:
+          type: object
+          required: [pending, processing, readyToShip, total]
+          properties:
+            pending: { type: integer }
+            processing: { type: integer }
+            readyToShip: { type: integer }
+            total: { type: integer }
+        customers:
+          type: object
+          required: [total, newThisWeek]
+          properties:
+            total: { type: integer }
+            newThisWeek: { type: integer }
+        inventory:
+          type: object
+          required: [lowStockCount, outOfStockCount]
+          properties:
+            lowStockCount: { type: integer }
+            outOfStockCount: { type: integer }
+        attentionItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttentionItem"
+        recentOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrderSummary"
+        salesByDay:
+          type: array
+          items:
+            type: object
+            required: [date, revenueInCents, orderCount]
+            properties:
+              date: { type: string }
+              revenueInCents: { type: integer }
+              orderCount: { type: integer }
+
+    AttentionItem:
+      type: object
+      required: [type, label, count, severity, href]
+      properties:
+        type: { type: string }
+        label: { type: string }
+        count: { type: integer }
+        severity: { type: string }
+        href: { type: string }
+
+    AdminOrderSummary:
+      type: object
+      required: [id, orderNumber, status, totalInCents, customerEmail, itemCount, createdAt]
+      properties:
+        id: { type: integer }
+        orderNumber: { type: string }
+        status: { type: string }
+        totalInCents: { type: integer }
+        currency: { type: string }
+        customerEmail: { type: ["string", "null"] }
+        customerName: { type: ["string", "null"] }
+        itemCount: { type: integer }
+        requiresManualReview: { type: boolean }
+        stripeRiskLevel: { type: ["string", "null"] }
+        trackingNumber: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AdminOrderDetail:
+      type: object
+      required: [id, orderNumber, status, items, subtotalInCents, shippingInCents, taxInCents, discountInCents, totalInCents, currency, createdAt]
+      properties:
+        id: { type: integer }
+        orderNumber: { type: string }
+        status: { type: string }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        subtotalInCents: { type: integer }
+        shippingInCents: { type: integer }
+        taxInCents: { type: integer }
+        discountInCents: { type: integer }
+        totalInCents: { type: integer }
+        currency: { type: string }
+        customerEmail: { type: ["string", "null"] }
+        customerName: { type: ["string", "null"] }
+        customerId: { type: ["integer", "null"] }
+        shippingAddress:
+          $ref: "#/components/schemas/AddressSnapshot"
+        billingAddress:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/AddressSnapshot"
+        discountCode: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        stripeSessionId: { type: ["string", "null"] }
+        stripePaymentIntentId: { type: ["string", "null"] }
+        stripeRiskLevel: { type: ["string", "null"] }
+        stripeRiskScore: { type: ["integer", "null"] }
+        requiresManualReview: { type: boolean }
+        shipments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminShipment"
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    AdminShipment:
+      type: object
+      required: [id, orderId, createdAt]
+      properties:
+        id: { type: integer }
+        orderId: { type: integer }
+        carrier: { type: ["string", "null"] }
+        trackingNumber: { type: ["string", "null"] }
+        trackingUrl: { type: ["string", "null"] }
+        estimatedDelivery: { type: ["string", "null"] }
+        shippedAt: { type: ["string", "null"] }
+        deliveredAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AdminOrderActionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [fulfill, cancel, refund, mark_processing, mark_packaged, clear_fraud_flag]
+        carrier: { type: string }
+        trackingNumber: { type: string }
+        trackingUrl: { type: string }
+        estimatedDelivery: { type: string }
+        refundAmountInCents: { type: integer }
+        reason: { type: string }
+        notes: { type: string }
+
+    AdminOrdersListResponse:
+      type: object
+      required: [orders, total]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrderSummary"
+        total: { type: integer }
+
+    AdminReturnSummary:
+      type: object
+      required: [id, orderNumber, status, reason, createdAt]
+      properties:
+        id: { type: integer }
+        orderNumber: { type: string }
+        customerEmail: { type: ["string", "null"] }
+        customerName: { type: ["string", "null"] }
+        status: { type: string }
+        reason: { type: string }
+        preferExchange: { type: boolean }
+        refundAmountInCents: { type: ["integer", "null"] }
+        itemCount: { type: integer }
+        createdAt: { type: string }
+
+    AdminReturnDetail:
+      type: object
+      required: [id, orderNumber, status, reason, items, createdAt]
+      properties:
+        id: { type: integer }
+        orderNumber: { type: string }
+        orderId: { type: integer }
+        customerId: { type: ["integer", "null"] }
+        customerEmail: { type: ["string", "null"] }
+        status: { type: string }
+        reason: { type: string }
+        preferExchange: { type: boolean }
+        refundAmountInCents: { type: ["integer", "null"] }
+        notes: { type: ["string", "null"] }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReturnItem"
+        processedAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AdminReturnItem:
+      type: object
+      required: [id, returnId, orderItemId, quantity, reason]
+      properties:
+        id: { type: integer }
+        returnId: { type: integer }
+        orderItemId: { type: integer }
+        productName: { type: string }
+        variantSku: { type: string }
+        quantity: { type: integer }
+        reason: { type: string }
+        notes: { type: ["string", "null"] }
+
+    AdminReturnActionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [approve, deny, receive_items, issue_refund, issue_exchange]
+        refundAmountInCents: { type: integer }
+        notes: { type: string }
+
+    AdminReturnListResponse:
+      type: object
+      required: [returns, total]
+      properties:
+        returns:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReturnSummary"
+        total: { type: integer }
+
+    AdminProductSummary:
+      type: object
+      required: [id, slug, name, status, variantCount, totalStock, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        theme: { type: ["string", "null"] }
+        status: { type: string }
+        isFeatured: { type: boolean }
+        variantCount: { type: integer }
+        totalStock: { type: integer }
+        priceMin: { type: integer }
+        priceMax: { type: integer }
+        primaryImageUrl: { type: ["string", "null"] }
+        collections:
+          type: array
+          items: { type: string }
+        createdAt: { type: string }
+
+    AdminProductDetail:
+      type: object
+      required: [id, slug, name, status, variants, images, collections]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        theme: { type: ["string", "null"] }
+        description: { type: string }
+        materials: { type: ["string", "null"] }
+        benefits: { type: ["string", "null"] }
+        shippingInfo: { type: ["string", "null"] }
+        returnsInfo: { type: ["string", "null"] }
+        status: { type: string }
+        isFeatured: { type: boolean }
+        sortOrder: { type: integer }
+        weightGrams: { type: ["integer", "null"] }
+        dimensionsCm: { type: ["string", "null"] }
+        hsCode: { type: ["string", "null"] }
+        countryOfOrigin: { type: ["string", "null"] }
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminProductVariant"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImage"
+        collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Collection"
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    AdminProductVariant:
+      type: object
+      required: [id, sku, priceInCents, stockQuantity, active]
+      properties:
+        id: { type: integer }
+        sku: { type: string }
+        size: { type: ["string", "null"] }
+        color: { type: ["string", "null"] }
+        priceInCents: { type: integer }
+        compareAtPriceInCents: { type: ["integer", "null"] }
+        stockQuantity: { type: integer }
+        reservedQuantity: { type: integer }
+        availableQuantity: { type: integer }
+        imageUrl: { type: ["string", "null"] }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+
+    AdminProductInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        theme: { type: string }
+        description: { type: string }
+        materials: { type: string }
+        benefits: { type: string }
+        shippingInfo: { type: string }
+        returnsInfo: { type: string }
+        status: { type: string }
+        isFeatured: { type: boolean }
+        sortOrder: { type: integer }
+        weightGrams: { type: integer }
+        dimensionsCm: { type: string }
+        hsCode: { type: string }
+        countryOfOrigin: { type: string }
+        collectionIds:
+          type: array
+          items: { type: integer }
+
+    AdminProductUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        theme: { type: string }
+        description: { type: string }
+        materials: { type: string }
+        benefits: { type: string }
+        shippingInfo: { type: string }
+        returnsInfo: { type: string }
+        status: { type: string }
+        isFeatured: { type: boolean }
+        sortOrder: { type: integer }
+        weightGrams: { type: integer }
+        dimensionsCm: { type: string }
+        hsCode: { type: string }
+        countryOfOrigin: { type: string }
+        collectionIds:
+          type: array
+          items: { type: integer }
+
+    AdminProductActionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [publish, unpublish, archive, restore, feature, unfeature]
+
+    AdminVariantInput:
+      type: object
+      required: [sku, priceInCents]
+      properties:
+        sku: { type: string }
+        size: { type: string }
+        color: { type: string }
+        priceInCents: { type: integer }
+        compareAtPriceInCents: { type: integer }
+        stockQuantity: { type: integer }
+        imageUrl: { type: string }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+
+    AdminVariantUpdate:
+      type: object
+      properties:
+        sku: { type: string }
+        size: { type: string }
+        color: { type: string }
+        priceInCents: { type: integer }
+        compareAtPriceInCents: { type: integer }
+        stockQuantity: { type: integer }
+        imageUrl: { type: string }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+
+    AdminImageInput:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+        altText: { type: string }
+        variantId: { type: integer }
+        isPrimary: { type: boolean }
+        position: { type: integer }
+
+    AdminProductsListResponse:
+      type: object
+      required: [products, total]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminProductSummary"
+        total: { type: integer }
+
+    AdminInventoryItem:
+      type: object
+      required: [variantId, sku, productName, stockQuantity, reservedQuantity, availableQuantity]
+      properties:
+        variantId: { type: integer }
+        productId: { type: integer }
+        productName: { type: string }
+        sku: { type: string }
+        size: { type: ["string", "null"] }
+        color: { type: ["string", "null"] }
+        stockQuantity: { type: integer }
+        reservedQuantity: { type: integer }
+        availableQuantity: { type: integer }
+        isLowStock: { type: boolean }
+        isOutOfStock: { type: boolean }
+        imageUrl: { type: ["string", "null"] }
+
+    AdminInventoryListResponse:
+      type: object
+      required: [items, total, lowStockCount, outOfStockCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminInventoryItem"
+        total: { type: integer }
+        lowStockCount: { type: integer }
+        outOfStockCount: { type: integer }
+
+    AdminInventoryAdjustInput:
+      type: object
+      required: [variantId, quantity, notes]
+      properties:
+        variantId: { type: integer }
+        quantity: { type: integer }
+        notes: { type: string }
+
+    AdminInventoryTransaction:
+      type: object
+      required: [id, variantId, sku, type, quantity, newStock, createdAt]
+      properties:
+        id: { type: integer }
+        variantId: { type: integer }
+        productName: { type: string }
+        sku: { type: string }
+        type: { type: string }
+        quantity: { type: integer }
+        previousStock: { type: integer }
+        newStock: { type: integer }
+        referenceType: { type: ["string", "null"] }
+        referenceId: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    InventoryHistoryResult:
+      type: object
+      required: [transactions, total]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminInventoryTransaction"
+        total: { type: integer }
+
+    AdminCustomerSummary:
+      type: object
+      required: [id, email, orderCount, totalSpentInCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        firstName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        orderCount: { type: integer }
+        totalSpentInCents: { type: integer }
+        status: { type: string }
+        marketingConsent: { type: boolean }
+        createdAt: { type: string }
+
+    AdminCustomerDetail:
+      type: object
+      required: [id, email, orderCount, totalSpentInCents, createdAt]
+      properties:
+        id: { type: integer }
+        clerkUserId: { type: ["string", "null"] }
+        email: { type: string }
+        firstName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        orderCount: { type: integer }
+        totalSpentInCents: { type: integer }
+        status: { type: string }
+        marketingConsent: { type: boolean }
+        recentOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrderSummary"
+        createdAt: { type: string }
+
+    AdminCustomersListResponse:
+      type: object
+      required: [customers, total]
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCustomerSummary"
+        total: { type: integer }
+
+    AdminDiscount:
+      type: object
+      required: [id, code, discountType, value, active, usedCount, createdAt]
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        discountType: { type: string }
+        value: { type: integer }
+        active: { type: boolean }
+        minimumOrderInCents: { type: ["integer", "null"] }
+        maxUses: { type: ["integer", "null"] }
+        usedCount: { type: integer }
+        expiresAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AdminDiscountInput:
+      type: object
+      required: [code, discountType, value]
+      properties:
+        code: { type: string }
+        discountType:
+          type: string
+          enum: [percentage, fixed]
+        value: { type: integer }
+        minimumOrderInCents: { type: integer }
+        maxUses: { type: integer }
+        active: { type: boolean }
+        expiresAt: { type: string }
+
+    AdminDiscountUpdate:
+      type: object
+      properties:
+        code: { type: string }
+        active: { type: boolean }
+        minimumOrderInCents: { type: integer }
+        maxUses: { type: integer }
+        expiresAt: { type: string }
+
+    AdminShippingZone:
+      type: object
+      required: [id, name, countries, active, rates]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        countries:
+          type: array
+          items: { type: string }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+        rates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminShippingRate"
+
+    AdminShippingRate:
+      type: object
+      required: [id, name, rateType, priceInCents, estimatedDays, active]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        rateType: { type: string }
+        priceInCents: { type: integer }
+        minimumOrderInCents: { type: ["integer", "null"] }
+        estimatedDays: { type: string }
+        active: { type: boolean }
+
+    AdminShippingZoneInput:
+      type: object
+      required: [name, countries]
+      properties:
+        name: { type: string }
+        countries:
+          type: array
+          items: { type: string }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+
+    AdminShippingZoneUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        countries:
+          type: array
+          items: { type: string }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+
+    AdminShippingRateInput:
+      type: object
+      required: [name, rateType, priceInCents, estimatedDays]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        rateType:
+          type: string
+          enum: [flat, free, calculated]
+        priceInCents: { type: integer }
+        minimumOrderInCents: { type: integer }
+        estimatedDays: { type: string }
+        active: { type: boolean }
+
+    AdminShippingRateUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        rateType: { type: string }
+        priceInCents: { type: integer }
+        minimumOrderInCents: { type: integer }
+        estimatedDays: { type: string }
+        active: { type: boolean }
+
+    AdminSupportTicket:
+      type: object
+      required: [id, email, subject, status, priority, createdAt]
+      properties:
+        id: { type: integer }
+        customerId: { type: ["integer", "null"] }
+        orderId: { type: ["integer", "null"] }
+        email: { type: string }
+        name: { type: ["string", "null"] }
+        subject: { type: string }
+        message: { type: string }
+        status: { type: string }
+        priority: { type: string }
+        assignedTo: { type: ["string", "null"] }
+        orderNumber: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    AdminSupportListResponse:
+      type: object
+      required: [tickets, total]
+      properties:
+        tickets:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminSupportTicket"
+        total: { type: integer }
+
+    AdminSupportUpdateInput:
+      type: object
+      properties:
+        status: { type: string }
+        priority: { type: string }
+        assignedTo: { type: string }
+        notes: { type: string }
+
+    AdminContentPage:
+      type: object
+      required: [id, key, title, body, isPublished, updatedAt]
+      properties:
+        id: { type: integer }
+        key: { type: string }
+        title: { type: string }
+        body: { type: string }
+        isPublished: { type: boolean }
+        updatedAt: { type: string }
+
+    AdminContentPageUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        body: { type: string }
+        isPublished: { type: boolean }
+
+    AdminHomepageSection:
+      type: object
+      required: [id, key, sectionType, position, active]
+      properties:
+        id: { type: integer }
+        key: { type: string }
+        sectionType: { type: string }
+        title: { type: ["string", "null"] }
+        subtitle: { type: ["string", "null"] }
+        position: { type: integer }
+        active: { type: boolean }
+
+    AdminHomepageSectionsUpdate:
+      type: object
+      required: [sections]
+      properties:
+        sections:
+          type: array
+          items:
+            type: object
+            required: [id, position, active]
+            properties:
+              id: { type: integer }
+              position: { type: integer }
+              active: { type: boolean }
+
+    AdminSiteSettingsUpdate:
+      type: object
+      properties:
+        businessName: { type: string }
+        supportEmail: { type: string }
+        defaultCountry: { type: string }
+        currency: { type: string }
+        socialInstagram: { type: string }
+        socialTiktok: { type: string }
+        socialYoutube: { type: string }
+        announcementBanner: { type: string }
+        announcementActive: { type: boolean }
+        logoUrl: { type: string }
+        faviconUrl: { type: string }
+
+    AdminUser:
+      type: object
+      required: [id, clerkUserId, email, role, createdAt]
+      properties:
+        id: { type: integer }
+        clerkUserId: { type: string }
+        email: { type: string }
+        name: { type: ["string", "null"] }
+        role: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    AdminUserBootstrapInput:
+      type: object
+      required: [secretKey]
+      properties:
+        secretKey: { type: string }
+
+    AdminUserUpdateInput:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [owner, manager, staff]
+        name: { type: string }
+
+    AdminUserInviteInput:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string }
+        role:
+          type: string
+          enum: [manager, staff]
+        name: { type: string }
+
+    ActivityLogEntry:
+      type: object
+      required: [id, action, createdAt]
+      properties:
+        id: { type: integer }
+        actorName: { type: ["string", "null"] }
+        actorEmail: { type: ["string", "null"] }
+        action: { type: string }
+        entityType: { type: ["string", "null"] }
+        entityId: { type: ["string", "null"] }
+        entityLabel: { type: ["string", "null"] }
+        details: {}
+        createdAt: { type: string }
+
+    ActivityLogResponse:
+      type: object
+      required: [entries, total]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityLogEntry"
+        total: { type: integer }
+
+    AdminReview:
+      type: object
+      required: [id, rating, title, body, reviewerName, isVerified, isApproved, createdAt]
+      properties:
+        id: { type: integer }
+        productId: { type: integer }
+        productName: { type: ["string", "null"] }
+        orderId: { type: ["integer", "null"] }
+        rating: { type: integer }
+        title: { type: string }
+        body: { type: string }
+        reviewerName: { type: string }
+        isVerified: { type: boolean }
+        isApproved: { type: boolean }
+        createdAt: { type: string }
+
+    AdminReviewsListResponse:
+      type: object
+      required: [reviews, total]
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminReview"
+        total: { type: integer }
+
+    AdminReviewActionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [approve, reject]
+
+    AdminSalesReport:
+      type: object
+      required: [period, totalRevenueInCents, totalOrders, avgOrderValueInCents, topProducts, salesByDay]
+      properties:
+        period: { type: string }
+        totalRevenueInCents: { type: integer }
+        totalOrders: { type: integer }
+        avgOrderValueInCents: { type: integer }
+        refundedInCents: { type: integer }
+        topProducts:
+          type: array
+          items:
+            type: object
+            required: [productName, unitsSold, revenueInCents]
+            properties:
+              productName: { type: string }
+              unitsSold: { type: integer }
+              revenueInCents: { type: integer }
+        salesByDay:
+          type: array
+          items:
+            type: object
+            required: [date, revenueInCents, orderCount]
+            properties:
+              date: { type: string }
+              revenueInCents: { type: integer }
+              orderCount: { type: integer }
+
+    AdminSystemStatus:
+      type: object
+      required: [status, services]
+      properties:
+        status: { type: string }
+        services:
+          type: array
+          items:
+            type: object
+            required: [name, status]
+            properties:
+              name: { type: string }
+              status: { type: string }
+              latencyMs: { type: ["integer", "null"] }
+              message: { type: ["string", "null"] }
+
+    AdminMeResponse:
+      type: object
+      required: [clerkUserId, email, role]
+      properties:
+        clerkUserId: { type: string }
+        email: { type: string }
+        name: { type: ["string", "null"] }
+        role: { type: string }
+        isFirstSetup: { type: boolean }

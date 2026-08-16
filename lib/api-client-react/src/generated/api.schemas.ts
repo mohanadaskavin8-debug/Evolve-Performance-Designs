@@ -509,6 +509,815 @@ export interface Discount {
   expiresAt?: string | null;
 }
 
+export type AdminDashboardRevenue = {
+  todayInCents: number;
+  weekInCents: number;
+  monthInCents: number;
+  monthGrowthPct: number;
+};
+
+export type AdminDashboardOrders = {
+  pending: number;
+  processing: number;
+  readyToShip: number;
+  total: number;
+};
+
+export type AdminDashboardCustomers = {
+  total: number;
+  newThisWeek: number;
+};
+
+export type AdminDashboardInventory = {
+  lowStockCount: number;
+  outOfStockCount: number;
+};
+
+export type AdminDashboardSalesByDayItem = {
+  date: string;
+  revenueInCents: number;
+  orderCount: number;
+};
+
+export interface AttentionItem {
+  type: string;
+  label: string;
+  count: number;
+  severity: string;
+  href: string;
+}
+
+export interface AdminOrderSummary {
+  id: number;
+  orderNumber: string;
+  status: string;
+  totalInCents: number;
+  currency?: string;
+  /** @nullable */
+  customerEmail: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  itemCount: number;
+  requiresManualReview?: boolean;
+  /** @nullable */
+  stripeRiskLevel?: string | null;
+  /** @nullable */
+  trackingNumber?: string | null;
+  createdAt: string;
+}
+
+export interface AdminDashboard {
+  revenue: AdminDashboardRevenue;
+  orders: AdminDashboardOrders;
+  customers: AdminDashboardCustomers;
+  inventory: AdminDashboardInventory;
+  attentionItems: AttentionItem[];
+  recentOrders: AdminOrderSummary[];
+  salesByDay: AdminDashboardSalesByDayItem[];
+}
+
+export interface AdminShipment {
+  id: number;
+  orderId: number;
+  /** @nullable */
+  carrier?: string | null;
+  /** @nullable */
+  trackingNumber?: string | null;
+  /** @nullable */
+  trackingUrl?: string | null;
+  /** @nullable */
+  estimatedDelivery?: string | null;
+  /** @nullable */
+  shippedAt?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  createdAt: string;
+}
+
+export interface AdminOrderDetail {
+  id: number;
+  orderNumber: string;
+  status: string;
+  items: OrderItem[];
+  subtotalInCents: number;
+  shippingInCents: number;
+  taxInCents: number;
+  discountInCents: number;
+  totalInCents: number;
+  currency: string;
+  /** @nullable */
+  customerEmail?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerId?: number | null;
+  shippingAddress?: AddressSnapshot;
+  billingAddress?: AddressSnapshot | null;
+  /** @nullable */
+  discountCode?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  stripeSessionId?: string | null;
+  /** @nullable */
+  stripePaymentIntentId?: string | null;
+  /** @nullable */
+  stripeRiskLevel?: string | null;
+  /** @nullable */
+  stripeRiskScore?: number | null;
+  requiresManualReview?: boolean;
+  shipments?: AdminShipment[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type AdminOrderActionInputAction = typeof AdminOrderActionInputAction[keyof typeof AdminOrderActionInputAction];
+
+
+export const AdminOrderActionInputAction = {
+  fulfill: 'fulfill',
+  cancel: 'cancel',
+  refund: 'refund',
+  mark_processing: 'mark_processing',
+  mark_packaged: 'mark_packaged',
+  clear_fraud_flag: 'clear_fraud_flag',
+} as const;
+
+export interface AdminOrderActionInput {
+  action: AdminOrderActionInputAction;
+  carrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  estimatedDelivery?: string;
+  refundAmountInCents?: number;
+  reason?: string;
+  notes?: string;
+}
+
+export interface AdminOrdersListResponse {
+  orders: AdminOrderSummary[];
+  total: number;
+}
+
+export interface AdminReturnSummary {
+  id: number;
+  orderNumber: string;
+  /** @nullable */
+  customerEmail?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  status: string;
+  reason: string;
+  preferExchange?: boolean;
+  /** @nullable */
+  refundAmountInCents?: number | null;
+  itemCount?: number;
+  createdAt: string;
+}
+
+export interface AdminReturnItem {
+  id: number;
+  returnId: number;
+  orderItemId: number;
+  productName?: string;
+  variantSku?: string;
+  quantity: number;
+  reason: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface AdminReturnDetail {
+  id: number;
+  orderNumber: string;
+  orderId?: number;
+  /** @nullable */
+  customerId?: number | null;
+  /** @nullable */
+  customerEmail?: string | null;
+  status: string;
+  reason: string;
+  preferExchange?: boolean;
+  /** @nullable */
+  refundAmountInCents?: number | null;
+  /** @nullable */
+  notes?: string | null;
+  items: AdminReturnItem[];
+  /** @nullable */
+  processedAt?: string | null;
+  createdAt: string;
+}
+
+export type AdminReturnActionInputAction = typeof AdminReturnActionInputAction[keyof typeof AdminReturnActionInputAction];
+
+
+export const AdminReturnActionInputAction = {
+  approve: 'approve',
+  deny: 'deny',
+  receive_items: 'receive_items',
+  issue_refund: 'issue_refund',
+  issue_exchange: 'issue_exchange',
+} as const;
+
+export interface AdminReturnActionInput {
+  action: AdminReturnActionInputAction;
+  refundAmountInCents?: number;
+  notes?: string;
+}
+
+export interface AdminReturnListResponse {
+  returns: AdminReturnSummary[];
+  total: number;
+}
+
+export interface AdminProductSummary {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  theme?: string | null;
+  status: string;
+  isFeatured?: boolean;
+  variantCount: number;
+  totalStock: number;
+  priceMin?: number;
+  priceMax?: number;
+  /** @nullable */
+  primaryImageUrl?: string | null;
+  collections?: string[];
+  createdAt: string;
+}
+
+export interface AdminProductVariant {
+  id: number;
+  sku: string;
+  /** @nullable */
+  size?: string | null;
+  /** @nullable */
+  color?: string | null;
+  priceInCents: number;
+  /** @nullable */
+  compareAtPriceInCents?: number | null;
+  stockQuantity: number;
+  reservedQuantity?: number;
+  availableQuantity?: number;
+  /** @nullable */
+  imageUrl?: string | null;
+  active: boolean;
+  sortOrder?: number;
+}
+
+export interface AdminProductDetail {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  theme?: string | null;
+  description?: string;
+  /** @nullable */
+  materials?: string | null;
+  /** @nullable */
+  benefits?: string | null;
+  /** @nullable */
+  shippingInfo?: string | null;
+  /** @nullable */
+  returnsInfo?: string | null;
+  status: string;
+  isFeatured?: boolean;
+  sortOrder?: number;
+  /** @nullable */
+  weightGrams?: number | null;
+  /** @nullable */
+  dimensionsCm?: string | null;
+  /** @nullable */
+  hsCode?: string | null;
+  /** @nullable */
+  countryOfOrigin?: string | null;
+  variants: AdminProductVariant[];
+  images: ProductImage[];
+  collections: Collection[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminProductInput {
+  name: string;
+  slug: string;
+  theme?: string;
+  description?: string;
+  materials?: string;
+  benefits?: string;
+  shippingInfo?: string;
+  returnsInfo?: string;
+  status?: string;
+  isFeatured?: boolean;
+  sortOrder?: number;
+  weightGrams?: number;
+  dimensionsCm?: string;
+  hsCode?: string;
+  countryOfOrigin?: string;
+  collectionIds?: number[];
+}
+
+export interface AdminProductUpdate {
+  name?: string;
+  slug?: string;
+  theme?: string;
+  description?: string;
+  materials?: string;
+  benefits?: string;
+  shippingInfo?: string;
+  returnsInfo?: string;
+  status?: string;
+  isFeatured?: boolean;
+  sortOrder?: number;
+  weightGrams?: number;
+  dimensionsCm?: string;
+  hsCode?: string;
+  countryOfOrigin?: string;
+  collectionIds?: number[];
+}
+
+export type AdminProductActionInputAction = typeof AdminProductActionInputAction[keyof typeof AdminProductActionInputAction];
+
+
+export const AdminProductActionInputAction = {
+  publish: 'publish',
+  unpublish: 'unpublish',
+  archive: 'archive',
+  restore: 'restore',
+  feature: 'feature',
+  unfeature: 'unfeature',
+} as const;
+
+export interface AdminProductActionInput {
+  action: AdminProductActionInputAction;
+}
+
+export interface AdminVariantInput {
+  sku: string;
+  size?: string;
+  color?: string;
+  priceInCents: number;
+  compareAtPriceInCents?: number;
+  stockQuantity?: number;
+  imageUrl?: string;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface AdminVariantUpdate {
+  sku?: string;
+  size?: string;
+  color?: string;
+  priceInCents?: number;
+  compareAtPriceInCents?: number;
+  stockQuantity?: number;
+  imageUrl?: string;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface AdminImageInput {
+  url: string;
+  altText?: string;
+  variantId?: number;
+  isPrimary?: boolean;
+  position?: number;
+}
+
+export interface AdminProductsListResponse {
+  products: AdminProductSummary[];
+  total: number;
+}
+
+export interface AdminInventoryItem {
+  variantId: number;
+  productId?: number;
+  productName: string;
+  sku: string;
+  /** @nullable */
+  size?: string | null;
+  /** @nullable */
+  color?: string | null;
+  stockQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  isLowStock?: boolean;
+  isOutOfStock?: boolean;
+  /** @nullable */
+  imageUrl?: string | null;
+}
+
+export interface AdminInventoryListResponse {
+  items: AdminInventoryItem[];
+  total: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+}
+
+export interface AdminInventoryAdjustInput {
+  variantId: number;
+  quantity: number;
+  notes: string;
+}
+
+export interface AdminInventoryTransaction {
+  id: number;
+  variantId: number;
+  productName?: string;
+  sku: string;
+  type: string;
+  quantity: number;
+  previousStock?: number;
+  newStock: number;
+  /** @nullable */
+  referenceType?: string | null;
+  /** @nullable */
+  referenceId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface InventoryHistoryResult {
+  transactions: AdminInventoryTransaction[];
+  total: number;
+}
+
+export interface AdminCustomerSummary {
+  id: number;
+  email: string;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  orderCount: number;
+  totalSpentInCents: number;
+  status: string;
+  marketingConsent?: boolean;
+  createdAt: string;
+}
+
+export interface AdminCustomerDetail {
+  id: number;
+  /** @nullable */
+  clerkUserId?: string | null;
+  email: string;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  orderCount: number;
+  totalSpentInCents: number;
+  status?: string;
+  marketingConsent?: boolean;
+  recentOrders?: AdminOrderSummary[];
+  createdAt: string;
+}
+
+export interface AdminCustomersListResponse {
+  customers: AdminCustomerSummary[];
+  total: number;
+}
+
+export interface AdminDiscount {
+  id: number;
+  code: string;
+  discountType: string;
+  value: number;
+  active: boolean;
+  /** @nullable */
+  minimumOrderInCents?: number | null;
+  /** @nullable */
+  maxUses?: number | null;
+  usedCount: number;
+  /** @nullable */
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export type AdminDiscountInputDiscountType = typeof AdminDiscountInputDiscountType[keyof typeof AdminDiscountInputDiscountType];
+
+
+export const AdminDiscountInputDiscountType = {
+  percentage: 'percentage',
+  fixed: 'fixed',
+} as const;
+
+export interface AdminDiscountInput {
+  code: string;
+  discountType: AdminDiscountInputDiscountType;
+  value: number;
+  minimumOrderInCents?: number;
+  maxUses?: number;
+  active?: boolean;
+  expiresAt?: string;
+}
+
+export interface AdminDiscountUpdate {
+  code?: string;
+  active?: boolean;
+  minimumOrderInCents?: number;
+  maxUses?: number;
+  expiresAt?: string;
+}
+
+export interface AdminShippingRate {
+  id: number;
+  name: string;
+  description?: string;
+  rateType: string;
+  priceInCents: number;
+  /** @nullable */
+  minimumOrderInCents?: number | null;
+  estimatedDays: string;
+  active: boolean;
+}
+
+export interface AdminShippingZone {
+  id: number;
+  name: string;
+  countries: string[];
+  active: boolean;
+  sortOrder?: number;
+  rates: AdminShippingRate[];
+}
+
+export interface AdminShippingZoneInput {
+  name: string;
+  countries: string[];
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface AdminShippingZoneUpdate {
+  name?: string;
+  countries?: string[];
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export type AdminShippingRateInputRateType = typeof AdminShippingRateInputRateType[keyof typeof AdminShippingRateInputRateType];
+
+
+export const AdminShippingRateInputRateType = {
+  flat: 'flat',
+  free: 'free',
+  calculated: 'calculated',
+} as const;
+
+export interface AdminShippingRateInput {
+  name: string;
+  description?: string;
+  rateType: AdminShippingRateInputRateType;
+  priceInCents: number;
+  minimumOrderInCents?: number;
+  estimatedDays: string;
+  active?: boolean;
+}
+
+export interface AdminShippingRateUpdate {
+  name?: string;
+  description?: string;
+  rateType?: string;
+  priceInCents?: number;
+  minimumOrderInCents?: number;
+  estimatedDays?: string;
+  active?: boolean;
+}
+
+export interface AdminSupportTicket {
+  id: number;
+  /** @nullable */
+  customerId?: number | null;
+  /** @nullable */
+  orderId?: number | null;
+  email: string;
+  /** @nullable */
+  name?: string | null;
+  subject: string;
+  message?: string;
+  status: string;
+  priority: string;
+  /** @nullable */
+  assignedTo?: string | null;
+  /** @nullable */
+  orderNumber?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AdminSupportListResponse {
+  tickets: AdminSupportTicket[];
+  total: number;
+}
+
+export interface AdminSupportUpdateInput {
+  status?: string;
+  priority?: string;
+  assignedTo?: string;
+  notes?: string;
+}
+
+export interface AdminContentPage {
+  id: number;
+  key: string;
+  title: string;
+  body: string;
+  isPublished: boolean;
+  updatedAt: string;
+}
+
+export interface AdminContentPageUpdate {
+  title?: string;
+  body?: string;
+  isPublished?: boolean;
+}
+
+export interface AdminHomepageSection {
+  id: number;
+  key: string;
+  sectionType: string;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  subtitle?: string | null;
+  position: number;
+  active: boolean;
+}
+
+export type AdminHomepageSectionsUpdateSectionsItem = {
+  id: number;
+  position: number;
+  active: boolean;
+};
+
+export interface AdminHomepageSectionsUpdate {
+  sections: AdminHomepageSectionsUpdateSectionsItem[];
+}
+
+export interface AdminSiteSettingsUpdate {
+  businessName?: string;
+  supportEmail?: string;
+  defaultCountry?: string;
+  currency?: string;
+  socialInstagram?: string;
+  socialTiktok?: string;
+  socialYoutube?: string;
+  announcementBanner?: string;
+  announcementActive?: boolean;
+  logoUrl?: string;
+  faviconUrl?: string;
+}
+
+export interface AdminUser {
+  id: number;
+  clerkUserId: string;
+  email: string;
+  /** @nullable */
+  name?: string | null;
+  role: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AdminUserBootstrapInput {
+  secretKey: string;
+}
+
+export type AdminUserUpdateInputRole = typeof AdminUserUpdateInputRole[keyof typeof AdminUserUpdateInputRole];
+
+
+export const AdminUserUpdateInputRole = {
+  owner: 'owner',
+  manager: 'manager',
+  staff: 'staff',
+} as const;
+
+export interface AdminUserUpdateInput {
+  role: AdminUserUpdateInputRole;
+  name?: string;
+}
+
+export type AdminUserInviteInputRole = typeof AdminUserInviteInputRole[keyof typeof AdminUserInviteInputRole];
+
+
+export const AdminUserInviteInputRole = {
+  manager: 'manager',
+  staff: 'staff',
+} as const;
+
+export interface AdminUserInviteInput {
+  email: string;
+  role: AdminUserInviteInputRole;
+  name?: string;
+}
+
+export interface ActivityLogEntry {
+  id: number;
+  /** @nullable */
+  actorName?: string | null;
+  /** @nullable */
+  actorEmail?: string | null;
+  action: string;
+  /** @nullable */
+  entityType?: string | null;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  entityLabel?: string | null;
+  details?: unknown;
+  createdAt: string;
+}
+
+export interface ActivityLogResponse {
+  entries: ActivityLogEntry[];
+  total: number;
+}
+
+export interface AdminReview {
+  id: number;
+  productId?: number;
+  /** @nullable */
+  productName?: string | null;
+  /** @nullable */
+  orderId?: number | null;
+  rating: number;
+  title: string;
+  body: string;
+  reviewerName: string;
+  isVerified: boolean;
+  isApproved: boolean;
+  createdAt: string;
+}
+
+export interface AdminReviewsListResponse {
+  reviews: AdminReview[];
+  total: number;
+}
+
+export type AdminReviewActionInputAction = typeof AdminReviewActionInputAction[keyof typeof AdminReviewActionInputAction];
+
+
+export const AdminReviewActionInputAction = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface AdminReviewActionInput {
+  action: AdminReviewActionInputAction;
+}
+
+export type AdminSalesReportTopProductsItem = {
+  productName: string;
+  unitsSold: number;
+  revenueInCents: number;
+};
+
+export type AdminSalesReportSalesByDayItem = {
+  date: string;
+  revenueInCents: number;
+  orderCount: number;
+};
+
+export interface AdminSalesReport {
+  period: string;
+  totalRevenueInCents: number;
+  totalOrders: number;
+  avgOrderValueInCents: number;
+  refundedInCents?: number;
+  topProducts: AdminSalesReportTopProductsItem[];
+  salesByDay: AdminSalesReportSalesByDayItem[];
+}
+
+export type AdminSystemStatusServicesItem = {
+  name: string;
+  status: string;
+  /** @nullable */
+  latencyMs?: number | null;
+  /** @nullable */
+  message?: string | null;
+};
+
+export interface AdminSystemStatus {
+  status: string;
+  services: AdminSystemStatusServicesItem[];
+}
+
+export interface AdminMeResponse {
+  clerkUserId: string;
+  email: string;
+  /** @nullable */
+  name?: string | null;
+  role: string;
+  isFirstSetup?: boolean;
+}
+
 export type ListProductsParams = {
 collection?: string;
 search?: string;
@@ -534,4 +1343,89 @@ export type ListAccountOrdersParams = {
 limit?: number;
 offset?: number;
 };
+
+export type AdminListOrdersParams = {
+status?: string;
+search?: string;
+requiresReview?: boolean;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListReturnsParams = {
+status?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListProductsParams = {
+status?: string;
+search?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListInventoryParams = {
+filter?: AdminListInventoryFilter;
+search?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListInventoryFilter = typeof AdminListInventoryFilter[keyof typeof AdminListInventoryFilter];
+
+
+export const AdminListInventoryFilter = {
+  all: 'all',
+  low_stock: 'low_stock',
+  out_of_stock: 'out_of_stock',
+} as const;
+
+export type AdminInventoryHistoryParams = {
+variantId?: number;
+type?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListCustomersParams = {
+search?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListSupportParams = {
+status?: string;
+search?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListReviewsParams = {
+isApproved?: boolean;
+limit?: number;
+offset?: number;
+};
+
+export type AdminListActivityParams = {
+entityType?: string;
+entityId?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminGetSalesReportParams = {
+period?: AdminGetSalesReportPeriod;
+};
+
+export type AdminGetSalesReportPeriod = typeof AdminGetSalesReportPeriod[keyof typeof AdminGetSalesReportPeriod];
+
+
+export const AdminGetSalesReportPeriod = {
+  today: 'today',
+  week: 'week',
+  month: 'month',
+  quarter: 'quarter',
+  year: 'year',
+} as const;
 
