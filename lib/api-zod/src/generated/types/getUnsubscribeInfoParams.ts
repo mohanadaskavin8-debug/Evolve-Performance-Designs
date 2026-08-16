@@ -6,8 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface NewsletterUnsubscribeInput {
-  email: string;
-  /** @nullable */
-  token?: string | null;
-}
+export type GetUnsubscribeInfoParams = {
+token: string;
+};

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'wouter';
-import { ShoppingCart, Menu, X, User, ChevronRight } from 'lucide-react';
-import { useGetSiteSettings, useGetCart } from '@workspace/api-client-react';
+import { ShoppingCart, Menu, X, User, ChevronRight, ArrowRight, CheckCircle } from 'lucide-react';
+import { useGetSiteSettings, useGetCart, useSubscribeNewsletter } from '@workspace/api-client-react';
 import { getCartSessionId } from '@/lib/utils';
 import { useUser } from '@clerk/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -120,6 +120,60 @@ function Navbar() {
   );
 }
 
+function NewsletterSignup() {
+  const [email, setEmail] = useState('');
+  const [joined, setJoined] = useState(false);
+  const subscribe = useSubscribeNewsletter();
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed || subscribe.isPending) return;
+    subscribe.mutate(
+      { data: { email: trimmed } },
+      { onSuccess: () => setJoined(true) }
+    );
+  };
+
+  if (joined) {
+    return (
+      <div className="flex items-center gap-3 font-mono text-sm uppercase tracking-widest text-white" data-testid="text-newsletter-success">
+        <CheckCircle className="w-5 h-5 text-primary" />
+        You're in. Welcome to the crew.
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="w-full md:w-auto" data-testid="form-newsletter">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="email"
+          required
+          placeholder="operative@domain.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full sm:w-72 bg-black border border-white/20 px-4 py-3 text-white font-mono text-sm placeholder:text-white/20 focus:outline-none focus:border-primary transition-colors"
+          data-testid="input-newsletter-email"
+        />
+        <button
+          type="submit"
+          disabled={subscribe.isPending}
+          className="bg-white text-black px-6 py-3 font-mono font-bold uppercase tracking-[0.2em] text-sm hover:bg-primary hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          data-testid="button-newsletter-subscribe"
+        >
+          {subscribe.isPending ? 'Joining…' : <>Enlist <ArrowRight className="w-4 h-4" /></>}
+        </button>
+      </div>
+      {subscribe.isError && (
+        <p className="mt-3 font-mono text-xs uppercase tracking-widest text-destructive">
+          {((subscribe.error as any)?.data?.error) || 'Something went wrong — try again.'}
+        </p>
+      )}
+    </form>
+  );
+}
+
 function Footer() {
   const { data: settings } = useGetSiteSettings({ query: { queryKey: ['site-settings'] } });
 
@@ -159,6 +213,17 @@ function Footer() {
             <li><Link href="/pages/shipping-policy" className="hover:text-primary transition-colors">Deployment</Link></li>
             <li><Link href="/pages/return-policy" className="hover:text-primary transition-colors">Returns</Link></li>
           </ul>
+        </div>
+      </div>
+      <div className="container mx-auto px-6 md:px-12 mt-16">
+        <div className="border border-white/10 bg-white/[0.02] p-8 md:p-10 flex flex-col md:flex-row md:items-end gap-8 justify-between">
+          <div className="max-w-md">
+            <h4 className="font-display font-bold uppercase tracking-[0.2em] text-white text-lg mb-3">Join the crew</h4>
+            <p className="text-muted-foreground text-sm font-mono leading-relaxed">
+              Training intel, drop alerts, and member-only deals. No spam — unsubscribe anytime.
+            </p>
+          </div>
+          <NewsletterSignup />
         </div>
       </div>
       <div className="container mx-auto px-6 md:px-12 mt-20 pt-8 border-t border-white/5 text-xs font-mono text-muted-foreground flex flex-col md:flex-row justify-between items-center uppercase tracking-widest">

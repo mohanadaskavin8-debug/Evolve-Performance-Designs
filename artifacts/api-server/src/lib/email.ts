@@ -8,7 +8,7 @@
  */
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import { db } from "@workspace/db";
-import { transactionalEmailsTable } from "@workspace/db";
+import { transactionalEmailsTable, emailTemplatesTable } from "@workspace/db";
 import { and, eq, lt } from "drizzle-orm";
 import { logger } from "./logger";
 
@@ -105,12 +105,28 @@ function renderMilestoneHtml(input: {
 </body></html>`;
 }
 
-async function sendViaResend(input: { to: string; subject: string; html: string }): Promise<string> {
+export async function sendViaResend(input: {
+  to: string;
+  subject: string;
+  html: string;
+  headers?: Record<string, string>;
+  /** Stable key so a crash-retry of the same logical send cannot double-deliver (Resend dedupes for 24h). */
+  idempotencyKey?: string;
+}): Promise<string> {
   const connectors = new ReplitConnectors();
   const response = (await connectors.proxy("resend", "/emails", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM_EMAIL, to: [input.to], subject: input.subject, html: input.html }),
+    headers: {
+      "Content-Type": "application/json",
+      ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}),
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [input.to],
+      subject: input.subject,
+      html: input.html,
+      ...(input.headers ? { headers: input.headers } : {}),
+    }),
   })) as unknown as Response;
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -133,6 +149,40 @@ export async function checkResendHealth(): Promise<{ healthy: boolean; message: 
   } catch (err) {
     return { healthy: false, message: err instanceof Error ? err.message : String(err) };
   }
+}
+
+// ── Owner-editable copy overrides ─────────────────────────────────────────────
+// The admin email center stores editable versions of the milestone copy under
+// keys like `transactional_shipped`. When present, they override the hardcoded
+// defaults above (cached ~60s so the send path stays fast).
+
+const templateCache = new Map<string, { copy: MilestoneCopy | null; at: number }>();
+
+export function invalidateTemplateCache(): void {
+  templateCache.clear();
+}
+
+async function milestoneCopy(type: MilestoneEmailType): Promise<MilestoneCopy> {
+  const key = `transactional_${type}`;
+  const cached = templateCache.get(key);
+  if (cached && Date.now() - cached.at < 60_000) {
+    return cached.copy ?? MILESTONE_COPY[type];
+  }
+  let copy: MilestoneCopy | null = null;
+  try {
+    const [row] = await db.select().from(emailTemplatesTable).where(eq(emailTemplatesTable.key, key));
+    if (row) {
+      copy = {
+        subject: (n) => row.subject.replaceAll("{{orderNumber}}", n),
+        headline: row.headline,
+        body: row.body,
+      };
+    }
+  } catch (err) {
+    logger.warn({ err, key }, "Template override lookup failed; using built-in copy");
+  }
+  templateCache.set(key, { copy, at: Date.now() });
+  return copy ?? MILESTONE_COPY[type];
 }
 
 export interface MilestoneEmailInput {
@@ -167,7 +217,7 @@ export async function sendMilestoneEmail(input: MilestoneEmailInput): Promise<"s
   const claim = claimed[0];
   if (!claim) return "duplicate";
 
-  const copy = MILESTONE_COPY[input.emailType];
+  const copy = await milestoneCopy(input.emailType);
   try {
     const resendId = await sendViaResend({
       to: input.recipient,
@@ -213,8 +263,8 @@ export async function retryFailedEmails(orderContext: (orderId: number) => Promi
   for (const row of failed) {
     const ctx = await orderContext(row.orderId);
     if (!ctx) continue;
-    const copy = MILESTONE_COPY[row.emailType as MilestoneEmailType];
-    if (!copy) continue;
+    if (!MILESTONE_COPY[row.emailType as MilestoneEmailType]) continue;
+    const copy = await milestoneCopy(row.emailType as MilestoneEmailType);
     try {
       const resendId = await sendViaResend({
         to: row.recipient,

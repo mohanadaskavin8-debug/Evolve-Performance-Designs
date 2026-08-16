@@ -441,14 +441,13 @@ export interface NewsletterSubscribeResponse {
   subscribed: boolean;
 }
 
-export interface NewsletterUnsubscribeInput {
-  email: string;
-  /** @nullable */
-  token?: string | null;
+export interface ResubscribeInput {
+  token: string;
 }
 
-export interface NewsletterUnsubscribeResponse {
-  unsubscribed: boolean;
+export interface ResubscribeResult {
+  confirmed: boolean;
+  email?: string;
 }
 
 export interface HomepageSection {
@@ -1432,6 +1431,221 @@ export interface AdminMeResponse {
   isFirstSetup?: boolean;
 }
 
+export type CampaignBlockType = typeof CampaignBlockType[keyof typeof CampaignBlockType];
+
+
+export const CampaignBlockType = {
+  headline: 'headline',
+  text: 'text',
+  image: 'image',
+  product: 'product',
+  discount: 'discount',
+  button: 'button',
+} as const;
+
+export interface CampaignBlock {
+  id: string;
+  type: CampaignBlockType;
+  /** @nullable */
+  text?: string | null;
+  /** @nullable */
+  url?: string | null;
+  /** @nullable */
+  alt?: string | null;
+  /** @nullable */
+  href?: string | null;
+  /** @nullable */
+  productId?: number | null;
+  /** @nullable */
+  code?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  label?: string | null;
+}
+
+export interface Campaign {
+  id: number;
+  name: string;
+  subject: string;
+  /** @nullable */
+  previewText?: string | null;
+  audienceKey: string;
+  /** draft | scheduled | sending | sent | canceled */
+  status: string;
+  blocks: CampaignBlock[];
+  /** @nullable */
+  scheduledAt?: string | null;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  totalRecipients?: number | null;
+  /** @nullable */
+  sentCount?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MarketingOverview {
+  activeSubscribers: number;
+  unsubscribedCount: number;
+  suppressedCount: number;
+  campaignsTotal: number;
+  campaignsSent: number;
+  /**
+     * Fraction 0-1 across sent campaigns, null when nothing measurable yet
+     * @nullable
+     */
+  openRate?: number | null;
+  /** @nullable */
+  clickRate?: number | null;
+  /** True when marketing sends are redirected to the Resend test sink */
+  testMode: boolean;
+  recentCampaigns?: Campaign[];
+}
+
+export interface Subscriber {
+  /** @nullable */
+  id?: number | null;
+  email: string;
+  /** @nullable */
+  firstName?: string | null;
+  source: string;
+  /** active | unsubscribed | suppressed */
+  status: string;
+  consentAt: string;
+  /** @nullable */
+  unsubscribedAt?: string | null;
+}
+
+export interface SubscriberListResponse {
+  subscribers: Subscriber[];
+  total: number;
+}
+
+export interface AudienceInfo {
+  key: string;
+  name: string;
+  description: string;
+  /** Consented, non-suppressed recipients right now */
+  count: number;
+}
+
+export interface CampaignInput {
+  name: string;
+  /** @nullable */
+  subject?: string | null;
+  /** @nullable */
+  previewText?: string | null;
+  /** @nullable */
+  audienceKey?: string | null;
+  /** @nullable */
+  blocks?: CampaignBlock[] | null;
+}
+
+export interface CampaignSendInput {
+  /**
+     * ISO datetime; omit to send now
+     * @nullable
+     */
+  scheduledAt?: string | null;
+}
+
+export interface TestSendInput {
+  email: string;
+}
+
+export interface CampaignRenderInput {
+  /** @nullable */
+  subject?: string | null;
+  /** @nullable */
+  previewText?: string | null;
+  blocks: CampaignBlock[];
+}
+
+export interface CampaignRenderResponse {
+  html: string;
+}
+
+export interface CampaignAnalytics {
+  totalRecipients: number;
+  pending: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  /** Where Resend reports it */
+  delivered: number;
+  bounced: number;
+  opened: number;
+  clicked: number;
+  /** Unsubscribes attributed to this campaign */
+  unsubscribed: number;
+}
+
+export interface EmailTemplate {
+  key: string;
+  /** transactional | automation */
+  category: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  subject: string;
+  headline: string;
+  body: string;
+  /** @nullable */
+  ctaLabel?: string | null;
+  /** @nullable */
+  ctaUrl?: string | null;
+  updatedAt: string;
+}
+
+export interface EmailTemplateUpdate {
+  /** @nullable */
+  subject?: string | null;
+  /** @nullable */
+  headline?: string | null;
+  /** @nullable */
+  body?: string | null;
+  /** @nullable */
+  ctaLabel?: string | null;
+  /** @nullable */
+  ctaUrl?: string | null;
+}
+
+export interface MarketingAutomationInfo {
+  key: string;
+  name: string;
+  enabled: boolean;
+  delayHours: number;
+  templateKey: string;
+  /** Sends in the last 30 days */
+  sent30d: number;
+}
+
+export interface AutomationUpdateInput {
+  /** @nullable */
+  enabled?: boolean | null;
+  /** @nullable */
+  delayHours?: number | null;
+}
+
+export interface UnsubscribeInfo {
+  email: string;
+  alreadyUnsubscribed: boolean;
+}
+
+export interface UnsubscribeInput {
+  /** @nullable */
+  token?: string | null;
+}
+
+export interface UnsubscribeResult {
+  unsubscribed: boolean;
+  email: string;
+}
+
 export type ListProductsParams = {
 collection?: string;
 search?: string;
@@ -1552,5 +1766,28 @@ status?: string;
 search?: string;
 limit?: number;
 offset?: number;
+};
+
+export type AdminListSubscribersParams = {
+search?: string;
+status?: string;
+limit?: number;
+offset?: number;
+};
+
+export type AdminDeleteCampaign200 = {
+  deleted: boolean;
+};
+
+export type AdminTestSendCampaign200 = {
+  sent: boolean;
+};
+
+export type GetUnsubscribeInfoParams = {
+token: string;
+};
+
+export type ConfirmUnsubscribeParams = {
+token?: string;
 };
 

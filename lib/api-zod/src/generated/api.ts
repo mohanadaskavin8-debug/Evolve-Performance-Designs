@@ -699,19 +699,6 @@ export const SubscribeNewsletterResponse = zod.object({
 
 
 /**
- * @summary Unsubscribe from newsletter
- */
-export const UnsubscribeNewsletterBody = zod.object({
-  "email": zod.string(),
-  "token": zod.string().nullish()
-})
-
-export const UnsubscribeNewsletterResponse = zod.object({
-  "unsubscribed": zod.boolean()
-})
-
-
-/**
  * @summary Get published homepage content and section order
  */
 export const GetHomepageContentResponse = zod.object({
@@ -2527,6 +2514,535 @@ export const AdminGetSystemStatusResponse = zod.object({
   "latencyMs": zod.number().int().nullish(),
   "message": zod.string().nullish()
 }))
+})
+
+
+/**
+ * @summary Email center overview metrics
+ */
+export const AdminMarketingOverviewResponse = zod.object({
+  "activeSubscribers": zod.number().int(),
+  "unsubscribedCount": zod.number().int(),
+  "suppressedCount": zod.number().int(),
+  "campaignsTotal": zod.number().int(),
+  "campaignsSent": zod.number().int(),
+  "openRate": zod.number().nullish().describe('Fraction 0-1 across sent campaigns, null when nothing measurable yet'),
+  "clickRate": zod.number().nullish(),
+  "testMode": zod.boolean().describe('True when marketing sends are redirected to the Resend test sink'),
+  "recentCampaigns": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})).optional()
+})
+
+
+/**
+ * @summary List subscribers and consenting customers
+ */
+export const AdminListSubscribersQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().int().optional(),
+  "offset": zod.coerce.number().int().optional()
+})
+
+export const AdminListSubscribersResponse = zod.object({
+  "subscribers": zod.array(zod.object({
+  "id": zod.number().int().nullish(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "source": zod.string(),
+  "status": zod.string().describe('active | unsubscribed | suppressed'),
+  "consentAt": zod.string(),
+  "unsubscribedAt": zod.string().nullish()
+})),
+  "total": zod.number().int()
+})
+
+
+/**
+ * @summary List audience segments with live consented counts
+ */
+export const AdminListAudiencesResponseItem = zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "count": zod.number().int().describe('Consented, non-suppressed recipients right now')
+})
+export const AdminListAudiencesResponse = zod.array(AdminListAudiencesResponseItem)
+
+
+/**
+ * @summary List campaigns
+ */
+export const AdminListCampaignsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const AdminListCampaignsResponse = zod.array(AdminListCampaignsResponseItem)
+
+
+/**
+ * @summary Create a draft campaign
+ */
+export const AdminCreateCampaignBody = zod.object({
+  "name": zod.string(),
+  "subject": zod.string().nullish(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string().nullish(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})).nullish()
+})
+
+export const AdminCreateCampaignResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Render campaign blocks to branded email HTML (live preview)
+ */
+export const AdminRenderCampaignPreviewBody = zod.object({
+  "subject": zod.string().nullish(),
+  "previewText": zod.string().nullish(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+}))
+})
+
+export const AdminRenderCampaignPreviewResponse = zod.object({
+  "html": zod.string()
+})
+
+
+/**
+ * @summary Get a campaign
+ */
+export const AdminGetCampaignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminGetCampaignResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Update a draft or scheduled campaign
+ */
+export const AdminUpdateCampaignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminUpdateCampaignBody = zod.object({
+  "name": zod.string(),
+  "subject": zod.string().nullish(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string().nullish(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})).nullish()
+})
+
+export const AdminUpdateCampaignResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a draft campaign
+ */
+export const AdminDeleteCampaignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminDeleteCampaignResponse = zod.object({
+  "deleted": zod.boolean()
+})
+
+
+/**
+ * @summary Send a single test email of this campaign
+ */
+export const AdminTestSendCampaignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminTestSendCampaignBody = zod.object({
+  "email": zod.string()
+})
+
+export const AdminTestSendCampaignResponse = zod.object({
+  "sent": zod.boolean()
+})
+
+
+/**
+ * @summary Send now, or schedule when scheduledAt is provided
+ */
+export const AdminSendCampaignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminSendCampaignBody = zod.object({
+  "scheduledAt": zod.string().nullish().describe('ISO datetime; omit to send now')
+})
+
+export const AdminSendCampaignResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Cancel a scheduled or sending campaign
+ */
+export const AdminCancelCampaignParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminCancelCampaignResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "previewText": zod.string().nullish(),
+  "audienceKey": zod.string(),
+  "status": zod.string().describe('draft | scheduled | sending | sent | canceled'),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['headline', 'text', 'image', 'product', 'discount', 'button']),
+  "text": zod.string().nullish(),
+  "url": zod.string().nullish(),
+  "alt": zod.string().nullish(),
+  "href": zod.string().nullish(),
+  "productId": zod.number().int().nullish(),
+  "code": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "label": zod.string().nullish()
+})),
+  "scheduledAt": zod.string().nullish(),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "totalRecipients": zod.number().int().nullish(),
+  "sentCount": zod.number().int().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Per-campaign delivery and engagement metrics
+ */
+export const AdminCampaignAnalyticsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AdminCampaignAnalyticsResponse = zod.object({
+  "totalRecipients": zod.number().int(),
+  "pending": zod.number().int(),
+  "sent": zod.number().int(),
+  "failed": zod.number().int(),
+  "skipped": zod.number().int(),
+  "delivered": zod.number().int().describe('Where Resend reports it'),
+  "bounced": zod.number().int(),
+  "opened": zod.number().int(),
+  "clicked": zod.number().int(),
+  "unsubscribed": zod.number().int().describe('Unsubscribes attributed to this campaign')
+})
+
+
+/**
+ * @summary List owner-editable email templates
+ */
+export const AdminListEmailTemplatesResponseItem = zod.object({
+  "key": zod.string(),
+  "category": zod.string().describe('transactional | automation'),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "subject": zod.string(),
+  "headline": zod.string(),
+  "body": zod.string(),
+  "ctaLabel": zod.string().nullish(),
+  "ctaUrl": zod.string().nullish(),
+  "updatedAt": zod.string()
+})
+export const AdminListEmailTemplatesResponse = zod.array(AdminListEmailTemplatesResponseItem)
+
+
+/**
+ * @summary Update an email template's copy
+ */
+export const AdminUpdateEmailTemplateParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const AdminUpdateEmailTemplateBody = zod.object({
+  "subject": zod.string().nullish(),
+  "headline": zod.string().nullish(),
+  "body": zod.string().nullish(),
+  "ctaLabel": zod.string().nullish(),
+  "ctaUrl": zod.string().nullish()
+})
+
+export const AdminUpdateEmailTemplateResponse = zod.object({
+  "key": zod.string(),
+  "category": zod.string().describe('transactional | automation'),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "subject": zod.string(),
+  "headline": zod.string(),
+  "body": zod.string(),
+  "ctaLabel": zod.string().nullish(),
+  "ctaUrl": zod.string().nullish(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary List marketing automations with recent activity
+ */
+export const AdminListAutomationsResponseItem = zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "enabled": zod.boolean(),
+  "delayHours": zod.number().int(),
+  "templateKey": zod.string(),
+  "sent30d": zod.number().int().describe('Sends in the last 30 days')
+})
+export const AdminListAutomationsResponse = zod.array(AdminListAutomationsResponseItem)
+
+
+/**
+ * @summary Enable/disable an automation or adjust its delay
+ */
+export const AdminUpdateAutomationParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const AdminUpdateAutomationBody = zod.object({
+  "enabled": zod.boolean().nullish(),
+  "delayHours": zod.number().int().nullish()
+})
+
+export const AdminUpdateAutomationResponse = zod.object({
+  "key": zod.string(),
+  "name": zod.string(),
+  "enabled": zod.boolean(),
+  "delayHours": zod.number().int(),
+  "templateKey": zod.string(),
+  "sent30d": zod.number().int().describe('Sends in the last 30 days')
+})
+
+
+/**
+ * @summary Resolve an unsubscribe token to its email address
+ */
+export const GetUnsubscribeInfoQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetUnsubscribeInfoResponse = zod.object({
+  "email": zod.string(),
+  "alreadyUnsubscribed": zod.boolean()
+})
+
+
+/**
+ * @summary Unsubscribe the address in the token (takes effect immediately)
+ */
+export const ConfirmUnsubscribeQueryParams = zod.object({
+  "token": zod.coerce.string().optional()
+})
+
+export const ConfirmUnsubscribeBody = zod.object({
+  "token": zod.string().nullish()
+})
+
+export const ConfirmUnsubscribeResponse = zod.object({
+  "unsubscribed": zod.boolean(),
+  "email": zod.string()
+})
+
+
+/**
+ * @summary Confirm re-subscription via signed token (double opt-in)
+ */
+export const ConfirmResubscribeBody = zod.object({
+  "token": zod.string()
+})
+
+export const ConfirmResubscribeResponse = zod.object({
+  "confirmed": zod.boolean(),
+  "email": zod.string().optional()
 })
 
 

@@ -5,7 +5,9 @@
  * Evolve Performance e-commerce API
  * OpenAPI spec version: 0.1.0
  */
+import type { Subscriber } from './subscriber';
 
-export interface NewsletterUnsubscribeResponse {
-  unsubscribed: boolean;
+export interface SubscriberListResponse {
+  subscribers: Subscriber[];
+  total: number;
 }

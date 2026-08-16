@@ -11,12 +11,19 @@ import {
   shippingZonesTable, shippingRatesTable,
   supportRequestsTable, reviewsTable,
   websitePagesTable, homepageSectionsTable, siteSettingsTable,
+  emailSubscribersTable, emailTemplatesTable, marketingCampaignsTable,
+  campaignRecipientsTable, emailSuppressionsTable, marketingAutomationsTable,
 } from "@workspace/db";
 import { eq, and, desc, asc, or, ilike, sql, lt, gte, inArray, ne } from "drizzle-orm";
 import Stripe from "stripe";
 import * as shipstation from "../lib/shipstation";
 import { attemptPush, getFulfillmentCounts, triggerOrderFulfillment } from "../lib/fulfillment";
-import { checkResendHealth } from "../lib/email";
+import { checkResendHealth, invalidateTemplateCache } from "../lib/email";
+import {
+  listAudiences, isValidAudience, runMarketingTick, isMarketingTestMode,
+  sendCampaignTestEmail, renderCampaignHtmlFor,
+} from "../lib/marketing";
+import { type CampaignBlockData } from "../lib/marketing-email";
 
 const router = Router();
 
@@ -1448,6 +1455,432 @@ router.get("/system/status", async (req, res, next) => requireAdmin(req, res, ne
       ? "unhealthy"
       : "degraded";
   res.json({ status: overallStatus, services });
+});
+
+// ═══ EMAIL MARKETING CENTER ═══════════════════════════════════════════════════
+
+const requireManager = (req: any, res: any, next: any) => requireAdmin(req, res, next, "manager");
+
+const MARKETING_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const BLOCK_TYPES = new Set(["headline", "text", "image", "product", "discount", "button"]);
+
+function validateBlocks(raw: unknown): { ok: true; blocks: CampaignBlockData[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw)) return { ok: false, error: "blocks must be an array" };
+  if (raw.length > 30) return { ok: false, error: "A campaign can have at most 30 blocks" };
+  const blocks: CampaignBlockData[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const b = raw[i];
+    if (!b || typeof b !== "object") return { ok: false, error: `Block ${i + 1} is invalid` };
+    const type = String(b.type ?? "");
+    if (!BLOCK_TYPES.has(type)) return { ok: false, error: `Block ${i + 1} has an unknown type` };
+    const id = typeof b.id === "string" && b.id.trim() ? b.id.trim().slice(0, 40) : `blk_${i}_${Date.now()}`;
+    const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : null);
+    const productId = Number.isInteger(b.productId) && b.productId > 0 ? b.productId : null;
+    blocks.push({
+      id, type: type as CampaignBlockData["type"],
+      text: str(b.text, 4000), url: str(b.url, 1000), alt: str(b.alt, 300), href: str(b.href, 1000),
+      productId, code: str(b.code, 100), note: str(b.note, 300), label: str(b.label, 100),
+    });
+  }
+  return { ok: true, blocks };
+}
+
+function campaignToJson(c: any, sentCount?: number | null): any {
+  return {
+    id: c.id,
+    name: c.name,
+    subject: c.subject ?? "",
+    previewText: c.previewText ?? c.preview_text ?? null,
+    audienceKey: c.audienceKey ?? c.audience_key,
+    status: c.status,
+    blocks: Array.isArray(c.blocks) ? c.blocks : [],
+    scheduledAt: (c.scheduledAt ?? c.scheduled_at)?.toISOString?.() ?? (c.scheduledAt ?? c.scheduled_at) ?? null,
+    startedAt: (c.startedAt ?? c.started_at)?.toISOString?.() ?? (c.startedAt ?? c.started_at) ?? null,
+    completedAt: (c.completedAt ?? c.completed_at)?.toISOString?.() ?? (c.completedAt ?? c.completed_at) ?? null,
+    totalRecipients: c.totalRecipients ?? c.total_recipients ?? null,
+    sentCount: sentCount ?? null,
+    createdAt: (c.createdAt ?? c.created_at)?.toISOString?.() ?? String(c.createdAt ?? c.created_at),
+    updatedAt: (c.updatedAt ?? c.updated_at)?.toISOString?.() ?? String(c.updatedAt ?? c.updated_at),
+  };
+}
+
+async function loadCampaign(id: number) {
+  const [c] = await db.select().from(marketingCampaignsTable).where(eq(marketingCampaignsTable.id, id));
+  return c ?? null;
+}
+
+// GET /admin/marketing/overview
+router.get("/marketing/overview", async (req, res, next) => requireAdmin(req, res, next), async (_req: any, res: any) => {
+  const { rows } = await pool.query(`
+    SELECT
+      (SELECT COUNT(*) FROM email_subscribers WHERE status = 'active') AS active_subs,
+      (SELECT COUNT(*) FROM email_subscribers WHERE status = 'unsubscribed') AS unsubs,
+      (SELECT COUNT(*) FROM email_suppressions) AS suppressed,
+      (SELECT COUNT(*) FROM marketing_campaigns) AS campaigns_total,
+      (SELECT COUNT(*) FROM marketing_campaigns WHERE status = 'sent') AS campaigns_sent,
+      (SELECT COUNT(*) FROM campaign_recipients WHERE status = 'sent') AS emails_sent,
+      (SELECT COUNT(*) FROM campaign_recipients WHERE status = 'sent' AND last_event IN ('opened','clicked')) AS opened,
+      (SELECT COUNT(*) FROM campaign_recipients WHERE status = 'sent' AND last_event = 'clicked') AS clicked
+  `);
+  const r = rows[0] ?? {};
+  const emailsSent = parseInt(r.emails_sent ?? "0");
+  const { rows: recent } = await pool.query(`
+    SELECT mc.*, (SELECT COUNT(*) FROM campaign_recipients cr WHERE cr.campaign_id = mc.id AND cr.status = 'sent') AS sent_count
+    FROM marketing_campaigns mc ORDER BY mc.created_at DESC LIMIT 5
+  `);
+  res.json({
+    activeSubscribers: parseInt(r.active_subs ?? "0"),
+    unsubscribedCount: parseInt(r.unsubs ?? "0"),
+    suppressedCount: parseInt(r.suppressed ?? "0"),
+    campaignsTotal: parseInt(r.campaigns_total ?? "0"),
+    campaignsSent: parseInt(r.campaigns_sent ?? "0"),
+    openRate: emailsSent > 0 ? parseInt(r.opened ?? "0") / emailsSent : null,
+    clickRate: emailsSent > 0 ? parseInt(r.clicked ?? "0") / emailsSent : null,
+    testMode: isMarketingTestMode(),
+    recentCampaigns: recent.map((c: any) => campaignToJson(c, parseInt(c.sent_count ?? "0"))),
+  });
+});
+
+// GET /admin/marketing/subscribers
+router.get("/marketing/subscribers", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res: any) => {
+  const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
+  const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
+  const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "50")) || 50, 1), 200);
+  const offset = Math.max(parseInt(String(req.query.offset ?? "0")) || 0, 0);
+
+  const baseSql = `
+    WITH base AS (
+      SELECT s.id, LOWER(s.email) AS email, s.first_name, s.source, s.status, s.consent_at, s.unsubscribed_at
+      FROM email_subscribers s
+      UNION ALL
+      SELECT NULL, LOWER(c.email), c.first_name, 'checkout', 'active', c.created_at, NULL
+      FROM customers c
+      WHERE c.marketing_consent = TRUE
+        AND NOT EXISTS (SELECT 1 FROM email_subscribers s2 WHERE LOWER(s2.email) = LOWER(c.email))
+    ), merged AS (
+      SELECT b.*, CASE WHEN sup.id IS NOT NULL THEN 'suppressed' ELSE b.status END AS effective_status
+      FROM base b
+      LEFT JOIN email_suppressions sup ON LOWER(sup.email) = b.email
+    )
+    SELECT * FROM merged
+    WHERE ($1 = '' OR email ILIKE '%' || $1 || '%' OR COALESCE(first_name,'') ILIKE '%' || $1 || '%')
+      AND ($2 = '' OR effective_status = $2)
+  `;
+  const [{ rows }, { rows: countRows }] = await Promise.all([
+    pool.query(`${baseSql} ORDER BY consent_at DESC NULLS LAST LIMIT $3 OFFSET $4`, [search, status, limit, offset]),
+    pool.query(`SELECT COUNT(*) AS n FROM (${baseSql}) q`, [search, status]),
+  ]);
+  res.json({
+    subscribers: rows.map((r: any) => ({
+      id: r.id,
+      email: r.email,
+      firstName: r.first_name ?? null,
+      source: r.source,
+      status: r.effective_status,
+      consentAt: r.consent_at?.toISOString?.() ?? String(r.consent_at),
+      unsubscribedAt: r.unsubscribed_at?.toISOString?.() ?? null,
+    })),
+    total: parseInt(countRows[0]?.n ?? "0"),
+  });
+});
+
+// GET /admin/marketing/audiences
+router.get("/marketing/audiences", async (req, res, next) => requireAdmin(req, res, next), async (_req: any, res: any) => {
+  res.json(await listAudiences());
+});
+
+// GET /admin/marketing/campaigns
+router.get("/marketing/campaigns", async (req, res, next) => requireAdmin(req, res, next), async (_req: any, res: any) => {
+  const { rows } = await pool.query(`
+    SELECT mc.*, (SELECT COUNT(*) FROM campaign_recipients cr WHERE cr.campaign_id = mc.id AND cr.status = 'sent') AS sent_count
+    FROM marketing_campaigns mc ORDER BY mc.created_at DESC LIMIT 100
+  `);
+  res.json(rows.map((c: any) => campaignToJson(c, parseInt(c.sent_count ?? "0"))));
+});
+
+// POST /admin/marketing/campaigns
+router.post("/marketing/campaigns", requireManager, async (req: any, res: any) => {
+  const name = typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 120) : "";
+  if (!name) { res.status(400).json({ error: "Campaign name is required" }); return; }
+  const subject = typeof req.body?.subject === "string" ? req.body.subject.trim().slice(0, 200) : "";
+  const previewText = typeof req.body?.previewText === "string" ? req.body.previewText.trim().slice(0, 200) || null : null;
+  const audienceKey = typeof req.body?.audienceKey === "string" && req.body.audienceKey ? req.body.audienceKey : "newsletter";
+  if (!(await isValidAudience(audienceKey))) { res.status(400).json({ error: "Unknown audience" }); return; }
+  let blocks: CampaignBlockData[] = [];
+  if (req.body?.blocks != null) {
+    const v = validateBlocks(req.body.blocks);
+    if (!v.ok) { res.status(400).json({ error: v.error }); return; }
+    blocks = v.blocks;
+  }
+  const [created] = await db
+    .insert(marketingCampaignsTable)
+    .values({ name, subject, previewText, audienceKey, blocks, status: "draft" })
+    .returning();
+  res.status(201).json(campaignToJson(created, 0));
+});
+
+// POST /admin/marketing/campaigns/render  (must be registered before /:id)
+router.post("/marketing/campaigns/render", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res: any) => {
+  const v = validateBlocks(req.body?.blocks ?? []);
+  if (!v.ok) { res.status(400).json({ error: v.error }); return; }
+  const previewText = typeof req.body?.previewText === "string" ? req.body.previewText.slice(0, 200) : null;
+  const html = await renderCampaignHtmlFor({ id: 0, previewText, blocks: v.blocks }, "preview@example.com");
+  res.json({ html });
+});
+
+// GET /admin/marketing/campaigns/:id
+router.get("/marketing/campaigns/:id", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  if (!Number.isInteger(id)) { res.status(404).json({ error: "Campaign not found" }); return; }
+  const campaign = await loadCampaign(id);
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  const { rows } = await pool.query(`SELECT COUNT(*) AS n FROM campaign_recipients WHERE campaign_id = $1 AND status = 'sent'`, [id]);
+  res.json(campaignToJson(campaign, parseInt(rows[0]?.n ?? "0")));
+});
+
+// PATCH /admin/marketing/campaigns/:id
+router.patch("/marketing/campaigns/:id", requireManager, async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  const campaign = Number.isInteger(id) ? await loadCampaign(id) : null;
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (campaign.status !== "draft" && campaign.status !== "scheduled") {
+    res.status(409).json({ error: "Only draft or scheduled campaigns can be edited" });
+    return;
+  }
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (typeof req.body?.name === "string" && req.body.name.trim()) updates.name = req.body.name.trim().slice(0, 120);
+  if (typeof req.body?.subject === "string") updates.subject = req.body.subject.trim().slice(0, 200);
+  if (req.body?.previewText !== undefined) {
+    updates.previewText = typeof req.body.previewText === "string" ? req.body.previewText.trim().slice(0, 200) || null : null;
+  }
+  if (typeof req.body?.audienceKey === "string" && req.body.audienceKey) {
+    if (!(await isValidAudience(req.body.audienceKey))) { res.status(400).json({ error: "Unknown audience" }); return; }
+    updates.audienceKey = req.body.audienceKey;
+  }
+  if (req.body?.blocks != null) {
+    const v = validateBlocks(req.body.blocks);
+    if (!v.ok) { res.status(400).json({ error: v.error }); return; }
+    updates.blocks = v.blocks;
+  }
+  const [updated] = await db.update(marketingCampaignsTable).set(updates as any).where(eq(marketingCampaignsTable.id, id)).returning();
+  res.json(campaignToJson(updated));
+});
+
+// DELETE /admin/marketing/campaigns/:id
+router.delete("/marketing/campaigns/:id", requireManager, async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  const campaign = Number.isInteger(id) ? await loadCampaign(id) : null;
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (campaign.status !== "draft") { res.status(409).json({ error: "Only draft campaigns can be deleted" }); return; }
+  await db.delete(marketingCampaignsTable).where(eq(marketingCampaignsTable.id, id));
+  res.json({ deleted: true });
+});
+
+// POST /admin/marketing/campaigns/:id/test-send
+router.post("/marketing/campaigns/:id/test-send", requireManager, async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  const campaign = Number.isInteger(id) ? await loadCampaign(id) : null;
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!email || !MARKETING_EMAIL_RE.test(email)) { res.status(400).json({ error: "A valid email address is required" }); return; }
+  try {
+    await sendCampaignTestEmail(campaign, email);
+    res.json({ sent: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(502).json({ error: `Test send failed: ${msg.slice(0, 200)}` });
+  }
+});
+
+// POST /admin/marketing/campaigns/:id/send  (send now, or schedule with scheduledAt)
+router.post("/marketing/campaigns/:id/send", requireManager, async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  const campaign = Number.isInteger(id) ? await loadCampaign(id) : null;
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (campaign.status !== "draft" && campaign.status !== "scheduled") {
+    res.status(409).json({ error: "This campaign has already been sent or is sending" });
+    return;
+  }
+  if (!campaign.subject?.trim()) { res.status(409).json({ error: "Add a subject line before sending" }); return; }
+  const blocks = Array.isArray(campaign.blocks) ? campaign.blocks : [];
+  if (blocks.length === 0) { res.status(409).json({ error: "Add at least one content block before sending" }); return; }
+  if (!(await isValidAudience(campaign.audienceKey))) { res.status(409).json({ error: "Pick a valid audience before sending" }); return; }
+
+  const rawScheduledAt = req.body?.scheduledAt;
+  if (rawScheduledAt) {
+    const when = new Date(String(rawScheduledAt));
+    if (Number.isNaN(when.getTime())) { res.status(400).json({ error: "Invalid schedule time" }); return; }
+    if (when.getTime() < Date.now() - 60_000) { res.status(400).json({ error: "Schedule time must be in the future" }); return; }
+    const [updated] = await db
+      .update(marketingCampaignsTable)
+      .set({ status: "scheduled", scheduledAt: when, updatedAt: new Date() })
+      .where(eq(marketingCampaignsTable.id, id))
+      .returning();
+    await logActivity({ actor: req.adminUser, action: "marketing.campaign.scheduled", entityType: "campaign", entityLabel: campaign.name, details: { campaignId: id, scheduledAt: when.toISOString() } });
+    res.json(campaignToJson(updated));
+    return;
+  }
+
+  const [updated] = await db
+    .update(marketingCampaignsTable)
+    .set({ status: "sending", startedAt: new Date(), scheduledAt: null, updatedAt: new Date() })
+    .where(eq(marketingCampaignsTable.id, id))
+    .returning();
+  await logActivity({ actor: req.adminUser, action: "marketing.campaign.sent", entityType: "campaign", entityLabel: campaign.name, details: { campaignId: id, audience: campaign.audienceKey, testMode: isMarketingTestMode() } });
+  res.json(campaignToJson(updated));
+  runMarketingTick().catch(() => {}); // kick the queue immediately; the 45s tick is the backstop
+});
+
+// POST /admin/marketing/campaigns/:id/cancel
+router.post("/marketing/campaigns/:id/cancel", requireManager, async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  const campaign = Number.isInteger(id) ? await loadCampaign(id) : null;
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (campaign.status === "scheduled") {
+    const [updated] = await db
+      .update(marketingCampaignsTable)
+      .set({ status: "draft", scheduledAt: null, updatedAt: new Date() })
+      .where(eq(marketingCampaignsTable.id, id))
+      .returning();
+    res.json(campaignToJson(updated));
+    return;
+  }
+  if (campaign.status === "sending") {
+    await pool.query(
+      `UPDATE campaign_recipients SET status = 'skipped', skip_reason = 'canceled' WHERE campaign_id = $1 AND status = 'pending'`,
+      [id],
+    );
+    const [updated] = await db
+      .update(marketingCampaignsTable)
+      .set({ status: "canceled", completedAt: new Date(), updatedAt: new Date() })
+      .where(eq(marketingCampaignsTable.id, id))
+      .returning();
+    await logActivity({ actor: req.adminUser, action: "marketing.campaign.canceled", entityType: "campaign", entityLabel: campaign.name, details: { campaignId: id } });
+    res.json(campaignToJson(updated));
+    return;
+  }
+  res.status(409).json({ error: "Only scheduled or sending campaigns can be canceled" });
+});
+
+// GET /admin/marketing/campaigns/:id/analytics
+router.get("/marketing/campaigns/:id/analytics", async (req, res, next) => requireAdmin(req, res, next), async (req: any, res: any) => {
+  const id = parseInt(req.params.id);
+  const campaign = Number.isInteger(id) ? await loadCampaign(id) : null;
+  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  const { rows } = await pool.query(
+    `SELECT
+       COUNT(*) AS total,
+       COUNT(*) FILTER (WHERE status = 'pending' OR status = 'sending') AS pending,
+       COUNT(*) FILTER (WHERE status = 'sent') AS sent,
+       COUNT(*) FILTER (WHERE status = 'failed') AS failed,
+       COUNT(*) FILTER (WHERE status = 'skipped') AS skipped,
+       COUNT(*) FILTER (WHERE status = 'sent' AND last_event IN ('delivered','opened','clicked')) AS delivered,
+       COUNT(*) FILTER (WHERE status = 'sent' AND last_event = 'bounced') AS bounced,
+       COUNT(*) FILTER (WHERE status = 'sent' AND last_event IN ('opened','clicked')) AS opened,
+       COUNT(*) FILTER (WHERE status = 'sent' AND last_event = 'clicked') AS clicked
+     FROM campaign_recipients WHERE campaign_id = $1`,
+    [id],
+  );
+  const { rows: unsubRows } = await pool.query(
+    `SELECT COUNT(*) AS n FROM email_suppressions WHERE campaign_id = $1 AND reason = 'unsubscribe'`,
+    [id],
+  );
+  const r = rows[0] ?? {};
+  res.json({
+    totalRecipients: parseInt(r.total ?? "0"),
+    pending: parseInt(r.pending ?? "0"),
+    sent: parseInt(r.sent ?? "0"),
+    failed: parseInt(r.failed ?? "0"),
+    skipped: parseInt(r.skipped ?? "0"),
+    delivered: parseInt(r.delivered ?? "0"),
+    bounced: parseInt(r.bounced ?? "0"),
+    opened: parseInt(r.opened ?? "0"),
+    clicked: parseInt(r.clicked ?? "0"),
+    unsubscribed: parseInt(unsubRows[0]?.n ?? "0"),
+  });
+});
+
+// GET /admin/marketing/templates
+router.get("/marketing/templates", async (req, res, next) => requireAdmin(req, res, next), async (_req: any, res: any) => {
+  const templates = await db.select().from(emailTemplatesTable).orderBy(asc(emailTemplatesTable.category), asc(emailTemplatesTable.name));
+  res.json(templates.map((t) => ({
+    key: t.key,
+    category: t.category,
+    name: t.name,
+    description: t.description ?? null,
+    subject: t.subject,
+    headline: t.headline,
+    body: t.body,
+    ctaLabel: t.ctaLabel ?? null,
+    ctaUrl: t.ctaUrl ?? null,
+    updatedAt: t.updatedAt.toISOString(),
+  })));
+});
+
+// PATCH /admin/marketing/templates/:key
+router.patch("/marketing/templates/:key", requireManager, async (req: any, res: any) => {
+  const key = String(req.params.key ?? "");
+  const [existing] = await db.select().from(emailTemplatesTable).where(eq(emailTemplatesTable.key, key));
+  if (!existing) { res.status(404).json({ error: "Template not found" }); return; }
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (typeof req.body?.subject === "string" && req.body.subject.trim()) updates.subject = req.body.subject.trim().slice(0, 200);
+  if (typeof req.body?.headline === "string" && req.body.headline.trim()) updates.headline = req.body.headline.trim().slice(0, 120);
+  if (typeof req.body?.body === "string" && req.body.body.trim()) updates.body = req.body.body.trim().slice(0, 4000);
+  if (req.body?.ctaLabel !== undefined) {
+    updates.ctaLabel = typeof req.body.ctaLabel === "string" ? req.body.ctaLabel.trim().slice(0, 100) || null : null;
+  }
+  if (req.body?.ctaUrl !== undefined) {
+    updates.ctaUrl = typeof req.body.ctaUrl === "string" ? req.body.ctaUrl.trim().slice(0, 500) || null : null;
+  }
+  const [updated] = await db.update(emailTemplatesTable).set(updates as any).where(eq(emailTemplatesTable.key, key)).returning();
+  invalidateTemplateCache();
+  await logActivity({ actor: req.adminUser, action: "marketing.template.updated", entityType: "email_template", entityLabel: updated.name, details: { key } });
+  res.json({
+    key: updated.key, category: updated.category, name: updated.name, description: updated.description ?? null,
+    subject: updated.subject, headline: updated.headline, body: updated.body,
+    ctaLabel: updated.ctaLabel ?? null, ctaUrl: updated.ctaUrl ?? null, updatedAt: updated.updatedAt.toISOString(),
+  });
+});
+
+// GET /admin/marketing/automations
+router.get("/marketing/automations", async (req, res, next) => requireAdmin(req, res, next), async (_req: any, res: any) => {
+  const automations = await db.select().from(marketingAutomationsTable).orderBy(asc(marketingAutomationsTable.key));
+  const { rows: counts } = await pool.query(
+    `SELECT automation_key, COUNT(*) AS n FROM automation_sends
+     WHERE status = 'sent' AND sent_at > NOW() - INTERVAL '30 days' GROUP BY automation_key`,
+  );
+  const countMap = new Map(counts.map((c: any) => [c.automation_key, parseInt(c.n)]));
+  res.json(automations.map((a) => ({
+    key: a.key, name: a.name, enabled: a.enabled, delayHours: a.delayHours,
+    templateKey: a.templateKey, sent30d: countMap.get(a.key) ?? 0,
+  })));
+});
+
+// PATCH /admin/marketing/automations/:key
+router.patch("/marketing/automations/:key", requireManager, async (req: any, res: any) => {
+  const key = String(req.params.key ?? "");
+  const [existing] = await db.select().from(marketingAutomationsTable).where(eq(marketingAutomationsTable.key, key));
+  if (!existing) { res.status(404).json({ error: "Automation not found" }); return; }
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (typeof req.body?.enabled === "boolean") updates.enabled = req.body.enabled;
+  if (req.body?.delayHours !== undefined) {
+    const hours = parseInt(String(req.body.delayHours));
+    if (!Number.isInteger(hours) || hours < 0 || hours > 720) {
+      res.status(400).json({ error: "Delay must be between 0 and 720 hours" });
+      return;
+    }
+    updates.delayHours = hours;
+  }
+  const [updated] = await db.update(marketingAutomationsTable).set(updates as any).where(eq(marketingAutomationsTable.key, key)).returning();
+  await logActivity({ actor: req.adminUser, action: "marketing.automation.updated", entityType: "automation", entityLabel: updated.name, details: { key, enabled: updated.enabled, delayHours: updated.delayHours } });
+  const { rows: counts } = await pool.query(
+    `SELECT COUNT(*) AS n FROM automation_sends WHERE automation_key = $1 AND status = 'sent' AND sent_at > NOW() - INTERVAL '30 days'`,
+    [key],
+  );
+  res.json({
+    key: updated.key, name: updated.name, enabled: updated.enabled, delayHours: updated.delayHours,
+    templateKey: updated.templateKey, sent30d: parseInt(counts[0]?.n ?? "0"),
+  });
 });
 
 export default router;

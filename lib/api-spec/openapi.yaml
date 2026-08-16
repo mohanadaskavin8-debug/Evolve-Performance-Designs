@@ -38,6 +38,8 @@ tags:
     description: Discount codes
   - name: admin
     description: Admin portal — business operating system (RBAC protected)
+  - name: marketing
+    description: Public email marketing endpoints (unsubscribe)
 
 paths:
   /healthz:
@@ -658,25 +660,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NewsletterSubscribeResponse"
-
-  /newsletter/unsubscribe:
-    post:
-      operationId: unsubscribeNewsletter
-      tags: [newsletter]
-      summary: Unsubscribe from newsletter
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NewsletterUnsubscribeInput"
-      responses:
-        "200":
-          description: Unsubscribed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NewsletterUnsubscribeResponse"
 
   # ── Content ───────────────────────────────────────────────────────────────────
   /content/homepage:
@@ -2023,6 +2006,473 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminSystemStatus"
 
+  # ── Admin: email marketing center ─────────────────────────────────────────
+  /admin/marketing/overview:
+    get:
+      operationId: adminMarketingOverview
+      tags: [admin]
+      summary: Email center overview metrics
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketingOverview"
+
+  /admin/marketing/subscribers:
+    get:
+      operationId: adminListSubscribers
+      tags: [admin]
+      summary: List subscribers and consenting customers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subscribers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriberListResponse"
+
+  /admin/marketing/audiences:
+    get:
+      operationId: adminListAudiences
+      tags: [admin]
+      summary: List audience segments with live consented counts
+      responses:
+        "200":
+          description: Audiences
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AudienceInfo"
+
+  /admin/marketing/campaigns:
+    get:
+      operationId: adminListCampaigns
+      tags: [admin]
+      summary: List campaigns
+      responses:
+        "200":
+          description: Campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Campaign"
+    post:
+      operationId: adminCreateCampaign
+      tags: [admin]
+      summary: Create a draft campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignInput"
+      responses:
+        "201":
+          description: Created campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+
+  /admin/marketing/campaigns/render:
+    post:
+      operationId: adminRenderCampaignPreview
+      tags: [admin]
+      summary: Render campaign blocks to branded email HTML (live preview)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignRenderInput"
+      responses:
+        "200":
+          description: Rendered HTML
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignRenderResponse"
+
+  /admin/marketing/campaigns/{id}:
+    get:
+      operationId: adminGetCampaign
+      tags: [admin]
+      summary: Get a campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: adminUpdateCampaign
+      tags: [admin]
+      summary: Update a draft or scheduled campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignInput"
+      responses:
+        "200":
+          description: Updated campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "409":
+          description: Campaign is not editable in its current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: adminDeleteCampaign
+      tags: [admin]
+      summary: Delete a draft campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted: { type: boolean }
+        "409":
+          description: Only drafts can be deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/marketing/campaigns/{id}/test-send:
+    post:
+      operationId: adminTestSendCampaign
+      tags: [admin]
+      summary: Send a single test email of this campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSendInput"
+      responses:
+        "200":
+          description: Test sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sent]
+                properties:
+                  sent: { type: boolean }
+
+  /admin/marketing/campaigns/{id}/send:
+    post:
+      operationId: adminSendCampaign
+      tags: [admin]
+      summary: Send now, or schedule when scheduledAt is provided
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignSendInput"
+      responses:
+        "200":
+          description: Campaign transitioned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "409":
+          description: Campaign cannot be sent in its current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/marketing/campaigns/{id}/cancel:
+    post:
+      operationId: adminCancelCampaign
+      tags: [admin]
+      summary: Cancel a scheduled or sending campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Campaign canceled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+
+  /admin/marketing/campaigns/{id}/analytics:
+    get:
+      operationId: adminCampaignAnalytics
+      tags: [admin]
+      summary: Per-campaign delivery and engagement metrics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignAnalytics"
+
+  /admin/marketing/templates:
+    get:
+      operationId: adminListEmailTemplates
+      tags: [admin]
+      summary: List owner-editable email templates
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmailTemplate"
+
+  /admin/marketing/templates/{key}:
+    patch:
+      operationId: adminUpdateEmailTemplate
+      tags: [admin]
+      summary: Update an email template's copy
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailTemplateUpdate"
+      responses:
+        "200":
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailTemplate"
+        "404":
+          description: Unknown template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/marketing/automations:
+    get:
+      operationId: adminListAutomations
+      tags: [admin]
+      summary: List marketing automations with recent activity
+      responses:
+        "200":
+          description: Automations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketingAutomationInfo"
+
+  /admin/marketing/automations/{key}:
+    patch:
+      operationId: adminUpdateAutomation
+      tags: [admin]
+      summary: Enable/disable an automation or adjust its delay
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutomationUpdateInput"
+      responses:
+        "200":
+          description: Updated automation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketingAutomationInfo"
+        "404":
+          description: Unknown automation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Public: unsubscribe ────────────────────────────────────────────────────
+  /marketing/unsubscribe/info:
+    get:
+      operationId: getUnsubscribeInfo
+      tags: [marketing]
+      summary: Resolve an unsubscribe token to its email address
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnsubscribeInfo"
+        "400":
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /marketing/unsubscribe:
+    post:
+      operationId: confirmUnsubscribe
+      tags: [marketing]
+      summary: Unsubscribe the address in the token (takes effect immediately)
+      parameters:
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnsubscribeInput"
+      responses:
+        "200":
+          description: Unsubscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnsubscribeResult"
+        "400":
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /marketing/resubscribe:
+    post:
+      operationId: confirmResubscribe
+      tags: [marketing]
+      summary: Confirm re-subscription via signed token (double opt-in)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResubscribeInput"
+      responses:
+        "200":
+          description: Re-subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResubscribeResult"
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Address is hard-suppressed (bounce/complaint)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /account/orders/{orderId}:
     get:
       operationId: getAccountOrderDetail
@@ -2764,21 +3214,21 @@ components:
         subscribed:
           type: boolean
 
-    NewsletterUnsubscribeInput:
+    ResubscribeInput:
       type: object
-      required: [email]
+      required: [token]
       properties:
+        token:
+          type: string
+
+    ResubscribeResult:
+      type: object
+      required: [confirmed]
+      properties:
+        confirmed:
+          type: boolean
         email:
           type: string
-        token:
-          type: ["string", "null"]
-
-    NewsletterUnsubscribeResponse:
-      type: object
-      required: [unsubscribed]
-      properties:
-        unsubscribed:
-          type: boolean
 
     # ── Content ───────────────────────────────────────────────────────────────
     HomepageContent:
@@ -3859,3 +4309,205 @@ components:
         name: { type: ["string", "null"] }
         role: { type: string }
         isFirstSetup: { type: boolean }
+
+    # ── Email marketing ────────────────────────────────────────────────────
+    MarketingOverview:
+      type: object
+      required: [activeSubscribers, unsubscribedCount, suppressedCount, campaignsTotal, campaignsSent, testMode]
+      properties:
+        activeSubscribers: { type: integer }
+        unsubscribedCount: { type: integer }
+        suppressedCount: { type: integer }
+        campaignsTotal: { type: integer }
+        campaignsSent: { type: integer }
+        openRate: { type: ["number", "null"], description: "Fraction 0-1 across sent campaigns, null when nothing measurable yet" }
+        clickRate: { type: ["number", "null"] }
+        testMode: { type: boolean, description: "True when marketing sends are redirected to the Resend test sink" }
+        recentCampaigns:
+          type: array
+          items:
+            $ref: "#/components/schemas/Campaign"
+
+    Subscriber:
+      type: object
+      required: [email, source, status, consentAt]
+      properties:
+        id: { type: ["integer", "null"] }
+        email: { type: string }
+        firstName: { type: ["string", "null"] }
+        source: { type: string }
+        status: { type: string, description: "active | unsubscribed | suppressed" }
+        consentAt: { type: string }
+        unsubscribedAt: { type: ["string", "null"] }
+
+    SubscriberListResponse:
+      type: object
+      required: [subscribers, total]
+      properties:
+        subscribers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subscriber"
+        total: { type: integer }
+
+    AudienceInfo:
+      type: object
+      required: [key, name, description, count]
+      properties:
+        key: { type: string }
+        name: { type: string }
+        description: { type: string }
+        count: { type: integer, description: "Consented, non-suppressed recipients right now" }
+
+    CampaignBlock:
+      type: object
+      required: [id, type]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [headline, text, image, product, discount, button] }
+        text: { type: ["string", "null"] }
+        url: { type: ["string", "null"] }
+        alt: { type: ["string", "null"] }
+        href: { type: ["string", "null"] }
+        productId: { type: ["integer", "null"] }
+        code: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+        label: { type: ["string", "null"] }
+
+    Campaign:
+      type: object
+      required: [id, name, subject, audienceKey, status, blocks, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        subject: { type: string }
+        previewText: { type: ["string", "null"] }
+        audienceKey: { type: string }
+        status: { type: string, description: "draft | scheduled | sending | sent | canceled" }
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampaignBlock"
+        scheduledAt: { type: ["string", "null"] }
+        startedAt: { type: ["string", "null"] }
+        completedAt: { type: ["string", "null"] }
+        totalRecipients: { type: ["integer", "null"] }
+        sentCount: { type: ["integer", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    CampaignInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        subject: { type: ["string", "null"] }
+        previewText: { type: ["string", "null"] }
+        audienceKey: { type: ["string", "null"] }
+        blocks:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/CampaignBlock"
+
+    CampaignSendInput:
+      type: object
+      properties:
+        scheduledAt: { type: ["string", "null"], description: "ISO datetime; omit to send now" }
+
+    TestSendInput:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string }
+
+    CampaignRenderInput:
+      type: object
+      required: [blocks]
+      properties:
+        subject: { type: ["string", "null"] }
+        previewText: { type: ["string", "null"] }
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampaignBlock"
+
+    CampaignRenderResponse:
+      type: object
+      required: [html]
+      properties:
+        html: { type: string }
+
+    CampaignAnalytics:
+      type: object
+      required: [totalRecipients, pending, sent, failed, skipped, delivered, bounced, opened, clicked, unsubscribed]
+      properties:
+        totalRecipients: { type: integer }
+        pending: { type: integer }
+        sent: { type: integer }
+        failed: { type: integer }
+        skipped: { type: integer }
+        delivered: { type: integer, description: "Where Resend reports it" }
+        bounced: { type: integer }
+        opened: { type: integer }
+        clicked: { type: integer }
+        unsubscribed: { type: integer, description: "Unsubscribes attributed to this campaign" }
+
+    EmailTemplate:
+      type: object
+      required: [key, category, name, subject, headline, body, updatedAt]
+      properties:
+        key: { type: string }
+        category: { type: string, description: "transactional | automation" }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        subject: { type: string }
+        headline: { type: string }
+        body: { type: string }
+        ctaLabel: { type: ["string", "null"] }
+        ctaUrl: { type: ["string", "null"] }
+        updatedAt: { type: string }
+
+    EmailTemplateUpdate:
+      type: object
+      properties:
+        subject: { type: ["string", "null"] }
+        headline: { type: ["string", "null"] }
+        body: { type: ["string", "null"] }
+        ctaLabel: { type: ["string", "null"] }
+        ctaUrl: { type: ["string", "null"] }
+
+    MarketingAutomationInfo:
+      type: object
+      required: [key, name, enabled, delayHours, templateKey, sent30d]
+      properties:
+        key: { type: string }
+        name: { type: string }
+        enabled: { type: boolean }
+        delayHours: { type: integer }
+        templateKey: { type: string }
+        sent30d: { type: integer, description: "Sends in the last 30 days" }
+
+    AutomationUpdateInput:
+      type: object
+      properties:
+        enabled: { type: ["boolean", "null"] }
+        delayHours: { type: ["integer", "null"] }
+
+    UnsubscribeInfo:
+      type: object
+      required: [email, alreadyUnsubscribed]
+      properties:
+        email: { type: string }
+        alreadyUnsubscribed: { type: boolean }
+
+    UnsubscribeInput:
+      type: object
+      properties:
+        token: { type: ["string", "null"] }
+
+    UnsubscribeResult:
+      type: object
+      required: [unsubscribed, email]
+      properties:
+        unsubscribed: { type: boolean }
+        email: { type: string }

@@ -19,6 +19,8 @@ import OrderDetail from '@/pages/OrderDetail';
 import Account from '@/pages/Account';
 import AccountReturnsNew from '@/pages/AccountReturnsNew';
 import Support from '@/pages/Support';
+import Unsubscribe from '@/pages/Unsubscribe';
+import ConfirmSubscription from '@/pages/ConfirmSubscription';
 import ContentPage from '@/pages/ContentPage';
 import NotFound from '@/pages/not-found';
 
@@ -43,6 +45,8 @@ function Router() {
           <Route path="/account" component={Account} />
           <Route path="/account/returns/new" component={AccountReturnsNew} />
           <Route path="/support" component={Support} />
+          <Route path="/unsubscribe" component={Unsubscribe} />
+          <Route path="/confirm-subscription" component={ConfirmSubscription} />
           <Route path="/pages/:pageKey" component={ContentPage} />
           <Route component={NotFound} />
         </Switch>

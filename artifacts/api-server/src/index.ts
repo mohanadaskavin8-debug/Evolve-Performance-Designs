@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startFulfillmentLoop } from "./lib/fulfillment";
+import { startMarketingLoop } from "./lib/marketing";
 
 const rawPort = process.env["PORT"];
 
@@ -24,4 +25,5 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   startFulfillmentLoop();
+  startMarketingLoop();
 });

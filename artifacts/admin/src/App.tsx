@@ -34,6 +34,8 @@ import ReviewsPage from '@/pages/reviews';
 import ActivityPage from '@/pages/activity';
 import ReportsPage from '@/pages/reports';
 import ShippingPage from '@/pages/shipping';
+import EmailPage from '@/pages/email/index';
+import CampaignEditorPage from '@/pages/email/campaign-editor';
 import FulfillmentPage from '@/pages/fulfillment';
 
 const queryClient = new QueryClient();
@@ -100,6 +102,13 @@ function Router() {
 
         <Route path="/shipping">
           <AuthGuard><ShippingPage /></AuthGuard>
+        </Route>
+
+        <Route path="/email">
+          <AuthGuard><EmailPage /></AuthGuard>
+        </Route>
+        <Route path="/email/campaigns/:id">
+          <AuthGuard><CampaignEditorPage /></AuthGuard>
         </Route>
 
         <Route path="/fulfillment">
