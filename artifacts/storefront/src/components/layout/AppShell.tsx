@@ -71,7 +71,7 @@ function Navbar() {
                 <User className="w-5 h-5" />
               </Link>
             ) : (
-              <Link href="/account" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-white transition-colors">
+              <Link href="/sign-in" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-white transition-colors">
                 <span className="text-xs font-mono uppercase tracking-widest">Login</span>
               </Link>
             )}
@@ -109,7 +109,7 @@ function Navbar() {
                 Track Ops <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
-              <Link href="/account" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+              <Link href={isSignedIn ? '/account' : '/sign-in'} className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
                 {isSignedIn ? 'Profile' : 'Authenticate'} <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
             </nav>

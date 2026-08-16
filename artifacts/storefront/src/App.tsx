@@ -18,6 +18,8 @@ import TrackOrder from '@/pages/TrackOrder';
 import OrderDetail from '@/pages/OrderDetail';
 import Account from '@/pages/Account';
 import AccountReturnsNew from '@/pages/AccountReturnsNew';
+import SignInPage from '@/pages/SignIn';
+import SignUpPage from '@/pages/SignUp';
 import Support from '@/pages/Support';
 import Unsubscribe from '@/pages/Unsubscribe';
 import ConfirmSubscription from '@/pages/ConfirmSubscription';
@@ -44,6 +46,8 @@ function Router() {
           <Route path="/orders/:orderNumber" component={OrderDetail} />
           <Route path="/account" component={Account} />
           <Route path="/account/returns/new" component={AccountReturnsNew} />
+          <Route path="/sign-in/*?" component={SignInPage} />
+          <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/support" component={Support} />
           <Route path="/unsubscribe" component={Unsubscribe} />
           <Route path="/confirm-subscription" component={ConfirmSubscription} />

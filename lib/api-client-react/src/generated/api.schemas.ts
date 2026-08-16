@@ -181,6 +181,14 @@ export interface CheckoutSessionInput {
   cancelUrl: string;
 }
 
+export interface CheckoutVerifyResponse {
+  orderNumber: string;
+  status: string;
+  totalInCents?: number;
+  /** @nullable */
+  email?: string | null;
+}
+
 export interface CheckoutSessionResponse {
   checkoutUrl: string;
   subtotalInCents: number;
@@ -1659,6 +1667,10 @@ sessionId: string;
 
 export type RemoveCartItemParams = {
 sessionId: string;
+};
+
+export type VerifyCheckoutSessionParams = {
+session_id: string;
 };
 
 export type LookupOrderParams = {

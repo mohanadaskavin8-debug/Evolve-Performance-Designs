@@ -414,6 +414,21 @@ export const ValidateDiscountCodeResponse = zod.object({
 
 
 /**
+ * @summary Verify a Stripe checkout session and return order status
+ */
+export const VerifyCheckoutSessionQueryParams = zod.object({
+  "session_id": zod.coerce.string()
+})
+
+export const VerifyCheckoutSessionResponse = zod.object({
+  "orderNumber": zod.string(),
+  "status": zod.string(),
+  "totalInCents": zod.number().int().optional(),
+  "email": zod.string().nullish()
+})
+
+
+/**
  * @summary Stripe webhook endpoint (signature-verified)
  */
 export const HandleStripeWebhookResponse = zod.object({

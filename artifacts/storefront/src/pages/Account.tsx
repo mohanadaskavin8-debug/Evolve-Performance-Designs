@@ -1,12 +1,20 @@
+import { useEffect } from 'react';
 import { useListAccountOrders, useGetAccountProfile } from '@workspace/api-client-react';
 import { useUser, SignOutButton } from '@clerk/react';
 import { formatPrice } from '@/lib/utils';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { LogOut, Package, ArrowRight, CornerUpLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Account() {
   const { isLoaded, isSignedIn, user } = useUser();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      navigate('/sign-in', { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate]);
   
   const { data: profile, isLoading: profileLoading } = useGetAccountProfile({
     query: { enabled: isSignedIn, queryKey: ['account-profile'] }
@@ -26,11 +34,10 @@ export default function Account() {
   }
 
   if (!isSignedIn) {
-    // Should be handled by Clerk redirecting to login, but just in case
+    // Redirecting to /sign-in via the effect above
     return (
-      <div className="min-h-screen pt-32 bg-background text-center flex flex-col items-center">
-        <h1 className="text-3xl font-display font-bold uppercase tracking-widest text-white mb-4">Access Denied</h1>
-        <p className="font-mono text-muted-foreground uppercase tracking-widest">Authentication required to view this sector.</p>
+      <div className="min-h-screen pt-32 bg-background flex justify-center">
+        <div className="w-16 h-16 border-t-2 border-primary rounded-full animate-spin"></div>
       </div>
     );
   }

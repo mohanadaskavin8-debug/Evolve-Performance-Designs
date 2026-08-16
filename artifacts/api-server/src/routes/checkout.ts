@@ -316,4 +316,34 @@ router.post("/session", async (req, res) => {
   }
 });
 
+// GET /api/checkout/verify?session_id=...
+// Called by the success page to confirm a real completed order exists for this
+// Stripe session — prevents anyone from navigating directly to /checkout/success.
+router.get("/verify", async (req, res) => {
+  const sessionId = typeof req.query["session_id"] === "string" ? req.query["session_id"] : null;
+  if (!sessionId) return res.status(400).json({ error: "session_id is required" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT o.order_number, o.status, o.total_in_cents,
+              COALESCE(c.email, o.guest_email) AS email
+       FROM orders o
+       LEFT JOIN customers c ON c.id = o.customer_id
+       WHERE o.stripe_session_id = $1
+       LIMIT 1`,
+      [sessionId],
+    );
+    if (!rows[0]) return res.status(404).json({ error: "No completed order found for this session" });
+    const r = rows[0];
+    return res.json({
+      orderNumber: r.order_number,
+      status: r.status,
+      totalInCents: r.total_in_cents,
+      email: r.email ?? null,
+    });
+  } catch {
+    return res.status(500).json({ error: "Failed to verify checkout session" });
+  }
+});
+
 export default router;

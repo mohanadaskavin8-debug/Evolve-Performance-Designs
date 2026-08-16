@@ -400,6 +400,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /checkout/verify:
+    get:
+      operationId: verifyCheckoutSession
+      tags: [checkout]
+      summary: Verify a Stripe checkout session and return order status
+      parameters:
+        - name: session_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order found for this session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutVerifyResponse"
+        "404":
+          description: No completed order found for this session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /checkout/webhook:
     post:
       operationId: handleStripeWebhook
@@ -2780,6 +2805,19 @@ components:
           type: string
         cancelUrl:
           type: string
+
+    CheckoutVerifyResponse:
+      type: object
+      required: [orderNumber, status]
+      properties:
+        orderNumber:
+          type: string
+        status:
+          type: string
+        totalInCents:
+          type: integer
+        email:
+          type: ["string", "null"]
 
     CheckoutSessionResponse:
       type: object
