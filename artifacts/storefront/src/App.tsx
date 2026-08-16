@@ -1,43 +1,53 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { ClerkProvider } from '@clerk/react';
+import { setBaseUrl } from '@workspace/api-client-react';
+
+import AppShell from '@/components/layout/AppShell';
+import Home from '@/pages/Home';
+import Shop from '@/pages/Shop';
+import ProductDetail from '@/pages/ProductDetail';
+import CollectionDetail from '@/pages/CollectionDetail';
+import Cart from '@/pages/Cart';
+import CheckoutSuccess from '@/pages/CheckoutSuccess';
+import TrackOrder from '@/pages/TrackOrder';
+import OrderDetail from '@/pages/OrderDetail';
+import Account from '@/pages/Account';
+import AccountReturnsNew from '@/pages/AccountReturnsNew';
+import Support from '@/pages/Support';
+import ContentPage from '@/pages/ContentPage';
 import NotFound from '@/pages/not-found';
-import {
-  Route,
-  Switch,
-  useLocation,
-  Router as WouterRouter,
-} from 'wouter';
 
 const queryClient = new QueryClient();
 
-function Home() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Replit Agent is building...
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Your app will appear here once it's ready.
-        </p>
-      </div>
-    </div>
-  );
-}
+// Configure the API client base URL
+setBaseUrl(import.meta.env.BASE_URL.replace(/\/$/, ''));
 
 function Router() {
   return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route component={NotFound} />
-      </Switch>
-    </RoutedErrorBoundary>
+    <AppShell>
+      <RoutedErrorBoundary>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/products" component={Shop} />
+          <Route path="/products/:slug" component={ProductDetail} />
+          <Route path="/collections/:slug" component={CollectionDetail} />
+          <Route path="/cart" component={Cart} />
+          <Route path="/checkout/success" component={CheckoutSuccess} />
+          <Route path="/track" component={TrackOrder} />
+          <Route path="/orders/:orderNumber" component={OrderDetail} />
+          <Route path="/account" component={Account} />
+          <Route path="/account/returns/new" component={AccountReturnsNew} />
+          <Route path="/support" component={Support} />
+          <Route path="/pages/:pageKey" component={ContentPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </RoutedErrorBoundary>
+    </AppShell>
   );
 }
 
@@ -47,15 +57,24 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 }
 
 function App() {
+  // Always dark mode
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ClerkProvider 
+      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
 

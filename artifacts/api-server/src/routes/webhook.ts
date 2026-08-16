@@ -4,9 +4,9 @@ import { db, pool } from "@workspace/db";
 import {
   ordersTable, orderItemsTable, cartItemsTable,
   productVariantsTable, inventoryTransactionsTable,
-  customersTable, inventoryReservationsTable,
+  customersTable, inventoryReservationsTable, productsTable,
 } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
@@ -34,24 +34,36 @@ router.post("/", async (req, res) => {
     try {
       await client.query("BEGIN");
 
+      // Idempotency guard: skip if this session was already processed
+      const { rows: existing } = await client.query(
+        `SELECT id FROM orders WHERE stripe_session_id = $1 LIMIT 1`,
+        [session.id],
+      );
+      if (existing.length > 0) {
+        await client.query("ROLLBACK");
+        return res.json({ received: true });
+      }
+
       // Find or create customer
-      const email = session.customer_details?.email ?? session.customer_email ?? "";
+      const email = session.customer_details?.email ?? (session as any).customer_email ?? "";
       let customerId: number | null = null;
       if (email) {
         const { rows } = await client.query(
           `INSERT INTO customers (email, stripe_customer_id) VALUES ($1, $2)
            ON CONFLICT (email) DO UPDATE SET stripe_customer_id = EXCLUDED.stripe_customer_id
            RETURNING id`,
-          [email, session.customer as string ?? null],
+          [email, typeof session.customer === "string" ? session.customer : null],
         );
         customerId = rows[0]?.id ?? null;
       }
 
       // Generate order number
       const orderNum = `EP-${Date.now().toString(36).toUpperCase()}`;
-      const addr = session.shipping_details?.address;
+      const sessionAny = session as any;
+      const shippingDetails = sessionAny.shipping_details ?? sessionAny.shipping ?? null;
+      const addr = shippingDetails?.address ?? null;
       const shippingAddress = addr ? {
-        name: session.shipping_details?.name ?? "",
+        name: shippingDetails?.name ?? "",
         line1: addr.line1 ?? "",
         line2: addr.line2 ?? null,
         city: addr.city ?? "",
@@ -72,7 +84,7 @@ router.post("/", async (req, res) => {
           session.currency?.toUpperCase() ?? "USD",
           JSON.stringify(shippingAddress),
           session.id,
-          session.payment_intent as string ?? null,
+          typeof session.payment_intent === "string" ? session.payment_intent : null,
         ],
       );
       const orderId = orderRows[0].id;
@@ -85,14 +97,24 @@ router.post("/", async (req, res) => {
       }).from(cartItemsTable).where(eq(cartItemsTable.sessionId, cartSessionId));
 
       for (const item of cartItems) {
-        const [variant] = await db.select().from(productVariantsTable).where(eq(productVariantsTable.id, item.variantId));
+        const [variant] = await db.select()
+          .from(productVariantsTable)
+          .where(eq(productVariantsTable.id, item.variantId));
         if (!variant) continue;
-        const product = await db.query.productsTable?.findFirst({ where: eq(productsTable.id, item.productId) });
+
+        const [product] = await db.select({ name: productsTable.name, slug: productsTable.slug })
+          .from(productsTable)
+          .where(eq(productsTable.id, item.productId));
 
         await client.query(
           `INSERT INTO order_items (order_id, variant_id, product_id, product_name, product_slug, variant_sku, size, color, quantity, unit_price_in_cents, total_price_in_cents)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-          [orderId, item.variantId, item.productId, product?.name ?? "Product", product?.slug ?? null, variant.sku, variant.size, variant.color, item.quantity, variant.priceInCents, variant.priceInCents * item.quantity],
+          [
+            orderId, item.variantId, item.productId,
+            product?.name ?? "Product", product?.slug ?? null,
+            variant.sku, variant.size, variant.color,
+            item.quantity, variant.priceInCents, variant.priceInCents * item.quantity,
+          ],
         );
 
         // Commit reservation: reduce actual stock, clear reserved
@@ -102,25 +124,22 @@ router.post("/", async (req, res) => {
         );
 
         await client.query(
-          `INSERT INTO inventory_transactions (variant_id, type, quantity, previous_stock, new_stock, reference_type, reference_id) VALUES ($1,'commit',$2,$3,$3 - $2,'order',$4)`,
+          `INSERT INTO inventory_transactions (variant_id, type, quantity, previous_stock, new_stock, reference_type, reference_id)
+           VALUES ($1,'commit',$2,$3,$3 - $2,'order',$4)`,
           [item.variantId, item.quantity, variant.stockQuantity, String(orderId)],
         );
       }
 
-      // Clear cart
+      // Clear cart and commit
       await client.query(`DELETE FROM cart_items WHERE session_id = $1`, [cartSessionId]);
       await client.query("COMMIT");
     } catch (e) {
       await client.query("ROLLBACK");
       console.error("Webhook order create failed:", e);
+      return res.status(500).json({ error: "Order fulfillment failed" });
     } finally {
       client.release();
     }
-  }
-
-  // Handle payment_intent.created for fraud signals
-  if (event.type === "payment_intent.succeeded" || event.type === "charge.succeeded") {
-    // Future: update order risk score
   }
 
   res.json({ received: true });

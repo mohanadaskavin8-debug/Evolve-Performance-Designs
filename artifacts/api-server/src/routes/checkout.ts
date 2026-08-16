@@ -74,9 +74,17 @@ router.post("/validate-discount", async (req, res) => {
 
 // POST /api/checkout/session
 router.post("/session", async (req, res) => {
-  const { sessionId, clerkUserId, customerEmail, discountCode, shippingZoneRateId, successUrl, cancelUrl } = req.body;
+  const { sessionId, clerkUserId, customerEmail, discountCode, shippingZoneRateId } = req.body;
   const stripe = getStripe();
   if (!stripe) return res.status(503).json({ error: "Payment processing unavailable" });
+
+  // Derive redirect URLs server-side from a trusted origin — never accept from client
+  const storefrontOrigin = process.env.STOREFRONT_ORIGIN
+    || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null)
+    || "http://localhost:5173";
+  const basePath = process.env.STOREFRONT_BASE_PATH ?? "";
+  const successUrl = `${storefrontOrigin}${basePath}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${storefrontOrigin}${basePath}/cart`;
 
   try {
     const items = await db

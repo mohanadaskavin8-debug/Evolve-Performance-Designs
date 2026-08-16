@@ -1,0 +1,7 @@
+- [Drizzle pv-alias SQL bug](drizzle-pv-alias.md) — Drizzle innerJoin uses full table name not alias; raw GROUP BY aggregations must use pool.query instead.
+- [Clerk v6 breaking changes](clerk-v6.md) — afterSignInUrl/afterSignUpUrl removed; proxyUrl removed; use useUser() not SignedIn/SignedOut components.
+- [DB dist must be built](db-dist-build.md) — lib/db must run tsc to emit dist/*.d.ts before api-server typecheck can see schema types via project references.
+- [Express noImplicitReturns](express-ts-config.md) — api-server tsconfig must override noImplicitReturns:false; Express handlers return void but `return res.json()` triggers TS7030.
+- [ErrorType is ApiError](error-type-shape.md) — ErrorType<T> = ApiError<T> with .data, .status, .message — no .error; use (err.data as any)?.error || err.message.
+- [Stripe webhook idempotency](webhook-idempotency.md) — Check stripe_session_id in orders table before processing; return 500 on failure so Stripe retries.
+- [Orval zod patch](orval-zod-patch.md) — patch-generated-zod.mjs rewrites Zod v4 API calls to v3 equivalents post-codegen; run after orval generate.

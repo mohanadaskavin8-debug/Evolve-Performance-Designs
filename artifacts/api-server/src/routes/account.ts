@@ -2,9 +2,10 @@ import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import {
-  customersTable, addressesTable, returnsTable, returnItemsTable, ordersTable,
+  customersTable, addressesTable, returnsTable, returnItemsTable,
+  ordersTable, orderItemsTable,
 } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -49,13 +50,22 @@ router.patch("/profile", async (req, res) => {
     .returning();
 
   if (!customer) return res.status(404).json({ error: "Customer not found" });
-  res.json({ ...customer, createdAt: customer.createdAt.toISOString() });
+
+  res.json({
+    id: customer.id,
+    email: customer.email,
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    phone: customer.phone,
+    marketingConsent: customer.marketingConsent,
+  });
 });
 
 // GET /api/account/addresses
 router.get("/addresses", async (req, res) => {
   const customerId = await requireCustomer(req, res);
   if (!customerId) return;
+
   const addresses = await db.select().from(addressesTable).where(eq(addressesTable.customerId, customerId));
   res.json(addresses);
 });
@@ -64,15 +74,9 @@ router.get("/addresses", async (req, res) => {
 router.post("/addresses", async (req, res) => {
   const customerId = await requireCustomer(req, res);
   if (!customerId) return;
-  const { name, line1, line2, city, state, postalCode, countryCode, isDefault } = req.body;
-
-  if (isDefault) {
-    await db.update(addressesTable).set({ isDefault: false }).where(eq(addressesTable.customerId, customerId));
-  }
 
   const [address] = await db.insert(addressesTable).values({
-    customerId, name, line1, line2, city, state, postalCode, countryCode,
-    isDefault: isDefault ?? false,
+    ...req.body, customerId,
   }).returning();
 
   res.status(201).json(address);
@@ -82,7 +86,12 @@ router.post("/addresses", async (req, res) => {
 router.delete("/addresses/:addressId", async (req, res) => {
   const customerId = await requireCustomer(req, res);
   if (!customerId) return;
-  await db.delete(addressesTable).where(eq(addressesTable.id, Number(req.params.addressId)));
+  // Ownership check: only delete if address belongs to this customer
+  const [deleted] = await db
+    .delete(addressesTable)
+    .where(and(eq(addressesTable.id, Number(req.params.addressId)), eq(addressesTable.customerId, customerId)))
+    .returning({ id: addressesTable.id });
+  if (!deleted) { res.status(404).json({ error: "Address not found" }); return; }
   res.status(204).end();
 });
 
@@ -118,16 +127,70 @@ router.post("/returns", async (req, res) => {
   if (!customerId) return;
 
   const { orderId, items, reason, preferExchange } = req.body;
+
+  // Ownership check: verify order belongs to this customer
+  const [order] = await db
+    .select({ id: ordersTable.id, orderNumber: ordersTable.orderNumber })
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, Number(orderId)), eq(ordersTable.customerId, customerId)));
+  if (!order) { res.status(403).json({ error: "Order not found or does not belong to your account" }); return; }
+
+  // Validate that every submitted orderItemId belongs to this specific order
+  if (Array.isArray(items) && items.length > 0) {
+    for (const item of items) {
+      const [oi] = await db
+        .select({ id: orderItemsTable.id })
+        .from(orderItemsTable)
+        .where(and(eq(orderItemsTable.id, Number(item.orderItemId)), eq(orderItemsTable.orderId, order.id)));
+      if (!oi) {
+        res.status(403).json({ error: `Order item ${item.orderItemId} does not belong to this order` });
+        return;
+      }
+    }
+  }
+
   const [ret] = await db.insert(returnsTable).values({
-    orderId, customerId, reason, preferExchange: preferExchange ?? false, status: "requested",
+    orderId: order.id, customerId, reason, preferExchange: preferExchange ?? false, status: "requested",
   }).returning();
 
   for (const item of items ?? []) {
-    await db.insert(returnItemsTable).values({ returnId: ret.id, orderItemId: item.orderItemId, quantity: item.quantity, reason: item.reason, notes: item.notes });
+    await db.insert(returnItemsTable).values({
+      returnId: ret.id,
+      orderItemId: item.orderItemId,
+      quantity: item.quantity,
+      reason: item.reason,
+      notes: item.notes,
+    });
   }
 
-  const [order] = await db.select({ orderNumber: ordersTable.orderNumber }).from(ordersTable).where(eq(ordersTable.id, orderId));
-  res.status(201).json({ id: ret.id, orderNumber: order?.orderNumber ?? "", status: ret.status, reason: ret.reason, items: items ?? [], createdAt: ret.createdAt.toISOString() });
+  res.status(201).json({
+    id: ret.id,
+    orderNumber: order.orderNumber,
+    status: ret.status,
+    reason: ret.reason,
+    items: items ?? [],
+    createdAt: ret.createdAt.toISOString(),
+  });
+});
+
+// GET /api/account/orders/:id — returns order with items for authenticated customer
+router.get("/orders/:id", async (req, res) => {
+  const customerId = await requireCustomer(req, res);
+  if (!customerId) return;
+
+  const [order] = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.id, Number(req.params.id)), eq(ordersTable.customerId, customerId)));
+
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+
+  const items = await db
+    .select()
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, order.id));
+
+  res.json({ ...order, items, createdAt: order.createdAt.toISOString() });
 });
 
 export default router;

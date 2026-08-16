@@ -2,11 +2,19 @@ import { Router } from "express";
 import { db, pool } from "@workspace/db";
 import {
   cartItemsTable, productVariantsTable, productsTable,
-  productImagesTable, inventoryReservationsTable, inventoryTransactionsTable
+  inventoryReservationsTable, inventoryTransactionsTable
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 
 const router = Router();
+
+const MAX_QUANTITY = 99;
+
+function validateQuantity(q: unknown): number | null {
+  const n = Number(q);
+  if (!Number.isInteger(n) || n < 1 || n > MAX_QUANTITY) return null;
+  return n;
+}
 
 async function buildCart(sessionId: string) {
   const items = await db
@@ -44,7 +52,7 @@ async function buildCart(sessionId: string) {
 // GET /api/cart
 router.get("/", async (req, res) => {
   const sessionId = req.query.sessionId as string;
-  if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+  if (!sessionId) { res.status(400).json({ error: "sessionId required" }); return; }
   try {
     res.json(await buildCart(sessionId));
   } catch {
@@ -54,47 +62,46 @@ router.get("/", async (req, res) => {
 
 // POST /api/cart/items
 router.post("/items", async (req, res) => {
-  const { sessionId, variantId, quantity, clerkUserId } = req.body;
-  if (!sessionId || !variantId || !quantity) return res.status(400).json({ error: "Missing fields" });
+  const { sessionId, variantId, quantity: rawQty, clerkUserId } = req.body;
+  if (!sessionId || !variantId) { res.status(400).json({ error: "Missing fields" }); return; }
+
+  const quantity = validateQuantity(rawQty);
+  if (!quantity) { res.status(400).json({ error: "quantity must be a positive integer between 1 and 99" }); return; }
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    // Lock variant row for update
     const { rows } = await client.query(
       `SELECT id, product_id, stock_quantity, reserved_quantity, price_in_cents FROM product_variants WHERE id = $1 FOR UPDATE`,
       [variantId],
     );
-    if (!rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Variant not found" }); }
+    if (!rows.length) { await client.query("ROLLBACK"); res.status(404).json({ error: "Variant not found" }); return; }
 
     const variant = rows[0];
     const available = variant.stock_quantity - variant.reserved_quantity;
     if (available < quantity) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ error: "Insufficient stock", available });
+      res.status(409).json({ error: "Insufficient stock", available });
+      return;
     }
 
-    // Expire reservation in 30 min
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     const { rows: resRows } = await client.query(
       `INSERT INTO inventory_reservations (variant_id, cart_session_id, quantity, expires_at) VALUES ($1, $2, $3, $4) RETURNING id`,
       [variantId, sessionId, quantity, expiresAt],
     );
 
-    // Update reserved quantity
     await client.query(
       `UPDATE product_variants SET reserved_quantity = reserved_quantity + $1, updated_at = NOW() WHERE id = $2`,
       [quantity, variantId],
     );
 
-    // Log transaction
     await client.query(
       `INSERT INTO inventory_transactions (variant_id, type, quantity, previous_stock, new_stock, reference_type, reference_id) VALUES ($1, 'reserve', $2, $3, $3, 'cart', $4)`,
       [variantId, quantity, variant.stock_quantity, sessionId],
     );
 
-    // Upsert cart item
     await client.query(
       `INSERT INTO cart_items (session_id, clerk_user_id, variant_id, product_id, quantity, reservation_id)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -113,21 +120,28 @@ router.post("/items", async (req, res) => {
   }
 });
 
-// PATCH /api/cart/items/:itemId
+// PATCH /api/cart/items/:itemId — requires sessionId in body to prove ownership
 router.patch("/items/:itemId", async (req, res) => {
-  const { quantity, sessionId } = req.body;
+  const { quantity: rawQty, sessionId } = req.body;
   const itemId = Number(req.params.itemId);
+
+  if (!sessionId) { res.status(400).json({ error: "sessionId required" }); return; }
+
+  const quantity = validateQuantity(rawQty);
+  if (!quantity) { res.status(400).json({ error: "quantity must be a positive integer between 1 and 99" }); return; }
 
   try {
     const [item] = await db.select().from(cartItemsTable).where(eq(cartItemsTable.id, itemId));
-    if (!item) return res.status(404).json({ error: "Item not found" });
+    if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+
+    // Scope to session — prevents altering another cart's items
+    if (item.sessionId !== sessionId) { res.status(403).json({ error: "Forbidden" }); return; }
 
     const diff = quantity - item.quantity;
     if (diff !== 0) {
-      // Update reservation
       await db
         .update(productVariantsTable)
-        .set({ reservedQuantity: sql`reserved_quantity + ${diff}` })
+        .set({ reservedQuantity: sql`GREATEST(0, reserved_quantity + ${diff})` })
         .where(eq(productVariantsTable.id, item.variantId));
     }
     await db.update(cartItemsTable).set({ quantity, updatedAt: new Date() }).where(eq(cartItemsTable.id, itemId));
@@ -138,15 +152,20 @@ router.patch("/items/:itemId", async (req, res) => {
   }
 });
 
-// DELETE /api/cart/items/:itemId
+// DELETE /api/cart/items/:itemId — requires sessionId as query param to prove ownership
 router.delete("/items/:itemId", async (req, res) => {
   const itemId = Number(req.params.itemId);
+  const sessionId = (req.query.sessionId as string) || (req.body?.sessionId as string);
+
+  if (!sessionId) { res.status(400).json({ error: "sessionId required" }); return; }
+
   try {
     const [item] = await db.select().from(cartItemsTable).where(eq(cartItemsTable.id, itemId));
-    if (!item) return res.status(404).json({ error: "Item not found" });
+    if (!item) { res.status(404).json({ error: "Item not found" }); return; }
 
-    const sessionId = item.sessionId;
-    // Release reservation
+    // Scope to session — prevents removing another cart's items
+    if (item.sessionId !== sessionId) { res.status(403).json({ error: "Forbidden" }); return; }
+
     await db
       .update(productVariantsTable)
       .set({ reservedQuantity: sql`GREATEST(0, reserved_quantity - ${item.quantity})` })
@@ -162,7 +181,7 @@ router.delete("/items/:itemId", async (req, res) => {
 // POST /api/cart/clear
 router.post("/clear", async (req, res) => {
   const { sessionId } = req.body;
-  if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+  if (!sessionId) { res.status(400).json({ error: "sessionId required" }); return; }
 
   try {
     const items = await db.select().from(cartItemsTable).where(eq(cartItemsTable.sessionId, sessionId));
