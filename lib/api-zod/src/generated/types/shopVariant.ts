@@ -6,7 +6,16 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface UnsubscribeInput {
+export interface ShopVariant {
+  /** Shopify variant GID (used as merchandiseId when adding to cart) */
+  id: string;
+  title: string;
   /** @nullable */
-  token?: string | null;
+  sku?: string | null;
+  priceInCents: number;
+  /** @nullable */
+  compareAtPriceInCents?: number | null;
+  availableForSale: boolean;
+  /** @nullable */
+  quantityAvailable?: number | null;
 }

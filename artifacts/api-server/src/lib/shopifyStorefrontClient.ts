@@ -1,129 +1,78 @@
-// Shopify Store stores its connection_settings privately in `settings`
-// (encrypted at rest, Admin tokens, refresh state, plus the public-facing
-// Storefront fields `shop_domain` and `storefront_access_token`).
-// `connection.public_settings` is intentionally empty for this connector;
-// the OpenInt `public_settings` split was rolled back per OpenInt #1703.
-//
-// This helper fetches `items[0].settings` from
-// `/api/v2/connection?include_secrets=true&...` using the standard Replit
-// connector proxy auth (REPL_IDENTITY / WEB_REPL_RENEWAL on
-// `X_REPLIT_TOKEN`) and extracts ONLY `shop_domain` and
-// `storefront_access_token` for app code. Other private settings (Admin
-// tokens, refresh state, transfer status, `shop_id`) are never read or
-// cached, so unrelated secrets stay out of generated app surface area.
-// Shopify treats the Storefront access token as a public buyer-facing
-// credential, so it is safe to send to Shopify's Storefront API from
-// server-side app code.
-//
-// The Storefront API version is pinned to a known-good Shopify release
-// rather than read from the connection. Dev-store preview behavior
-// (appending `channel=online_store` to checkout URLs for password-gated
-// Vibe stores) is no longer auto-detected from the connection — pass
-// `useDevStorePreview` to `shopifyStorefrontRequest` callers / cart
-// helpers when the agent context indicates a dev/preview environment.
+/**
+ * Shopify Storefront API client for the owner's own store.
+ *
+ * Configuration comes from environment variables — this app points at the
+ * store owner's real Shopify store, not at a Replit-provisioned dev store:
+ *
+ *   SHOPIFY_STORE_DOMAIN            e.g. "ep-23446707.myshopify.com"
+ *   SHOPIFY_STOREFRONT_ACCESS_TOKEN Storefront API public access token from
+ *                                   the owner's headless/custom app
+ *
+ * There is intentionally NO fallback to the Replit Shopify connector: if the
+ * env vars are missing the API fails loudly with a clear message instead of
+ * silently serving another store's catalog. Shopify treats the Storefront
+ * access token as a public buyer-facing credential, but it still never ships
+ * to the browser — all Storefront API calls happen server-side here.
+ */
+
+// Pinned to a known-good Shopify API release.
 const STOREFRONT_API_VERSION = "2026-04";
+const FETCH_TIMEOUT_MS = 10_000;
 
-type ShopifyConnectionSettings = {
-  shop_domain?: string;
-  storefront_access_token?: string;
-};
+/** Thrown when the store env vars are missing — routes map this to HTTP 503. */
+export class ShopifyConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ShopifyConfigError";
+  }
+}
 
-type ShopifyConnectionResponse = {
-  items?: Array<{
-    settings?: ShopifyConnectionSettings;
-  }>;
-};
-
-type ShopifyStorefrontConfig = {
+export type ShopifyStorefrontConfig = {
   shopDomain: string;
   storefrontAccessToken: string;
 };
 
-const CONFIG_CACHE_TTL_MS = 60_000;
-const FETCH_TIMEOUT_MS = 10_000;
-
-let cachedConfig:
-  | { value: ShopifyStorefrontConfig; expiresAt: number }
-  | undefined;
-
-function getOpenIntConnectionConfig() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const token = process.env.REPL_IDENTITY
-    ? `repl ${process.env.REPL_IDENTITY}`
-    : process.env.WEB_REPL_RENEWAL
-      ? `depl ${process.env.WEB_REPL_RENEWAL}`
-      : null;
-
-  if (!hostname || !token) {
-    throw new Error("Missing Replit connector environment variables");
-  }
-
-  const protocol = hostname.startsWith("localhost") ? "http" : "https";
-  const connectionUrl = new URL(`${protocol}://${hostname}/api/v2/connection`);
-  connectionUrl.searchParams.set("include_secrets", "true");
-  connectionUrl.searchParams.set("connector_names", "shopify-store");
-  connectionUrl.searchParams.set("refresh_policy", "none");
-
-  return {
-    connectionUrl: connectionUrl.toString(),
-    token,
-  };
+/**
+ * Accepts pasted values like "https://my-store.myshopify.com/", 
+ * "my-store.myshopify.com" or "admin.shopify.com/store/my-store" and
+ * normalizes to the bare myshopify.com host.
+ */
+export function normalizeShopDomain(raw: string): string {
+  let value = raw.trim().toLowerCase();
+  if (!value) return "";
+  value = value.replace(/^https?:\/\//, "");
+  // admin.shopify.com/store/<handle> → <handle>.myshopify.com
+  const adminMatch = value.match(/^admin\.shopify\.com\/store\/([a-z0-9][a-z0-9-]*)/);
+  if (adminMatch) return `${adminMatch[1]}.myshopify.com`;
+  value = value.split("/")[0]!.split("?")[0]!;
+  if (!value.includes(".")) value = `${value}.myshopify.com`;
+  return value;
 }
 
-export async function getShopifyStorefrontConfig(
-  options: { forceRefresh?: boolean } = {},
-): Promise<ShopifyStorefrontConfig> {
-  if (cachedConfig && !options.forceRefresh && Date.now() < cachedConfig.expiresAt) {
-    return cachedConfig.value;
-  }
+export function getShopifyStorefrontConfig(): ShopifyStorefrontConfig {
+  const shopDomain = normalizeShopDomain(process.env.SHOPIFY_STORE_DOMAIN ?? "");
+  const storefrontAccessToken = (process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ?? "").trim();
 
-  const { connectionUrl, token } = getOpenIntConnectionConfig();
-  // `cache: "no-store"` opts out of framework-enhanced fetch caching
-  // (Next.js SSR / server actions, edge runtimes). This helper's own
-  // 60s TTL + the 401/403 forceRefresh path are the only intended cache
-  // boundaries; framework caching would defeat the retry by handing
-  // back a stale connection response after OpenInt remints the
-  // Storefront token (e.g. during Go Live).
-  const resp = await fetch(connectionUrl, {
-    headers: {
-      Accept: "application/json",
-      X_REPLIT_TOKEN: token,
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-
-  if (!resp.ok) {
-    throw new Error(`Failed to fetch Shopify connection: ${resp.status}`);
-  }
-
-  const data = (await resp.json()) as ShopifyConnectionResponse;
-  const settings = data.items?.[0]?.settings;
-  if (!settings?.shop_domain || !settings.storefront_access_token) {
-    throw new Error(
-      "Shopify Store integration is missing Storefront settings. Recreate the integration after OpenInt provisions a Storefront token.",
+  const missing: string[] = [];
+  if (!shopDomain) missing.push("SHOPIFY_STORE_DOMAIN");
+  if (!storefrontAccessToken) missing.push("SHOPIFY_STOREFRONT_ACCESS_TOKEN");
+  if (missing.length > 0) {
+    throw new ShopifyConfigError(
+      `Shopify store is not connected yet — missing ${missing.join(" and ")}. ` +
+        `Set the store's .myshopify.com domain and its Storefront API access token to go live.`,
     );
   }
 
-  // Extract only the Storefront-facing fields so unrelated private
-  // settings (Admin tokens, refresh state, transfer status, shop_id)
-  // never reach generated app code or the in-memory cache.
-  cachedConfig = {
-    value: {
-      shopDomain: settings.shop_domain,
-      storefrontAccessToken: settings.storefront_access_token,
-    },
-    expiresAt: Date.now() + CONFIG_CACHE_TTL_MS,
-  };
-  return cachedConfig.value;
+  return { shopDomain, storefrontAccessToken };
 }
+
+type StorefrontGraphQLError = { message?: string };
 
 export async function shopifyStorefrontRequest<T>(
   query: string,
   variables?: Record<string, unknown>,
-  options: { retryOnUnauthorized?: boolean } = {},
 ): Promise<T> {
-  const config = await getShopifyStorefrontConfig();
+  const config = getShopifyStorefrontConfig();
 
   const resp = await fetch(
     `https://${config.shopDomain}/api/${STOREFRONT_API_VERSION}/graphql.json`,
@@ -138,32 +87,38 @@ export async function shopifyStorefrontRequest<T>(
     },
   );
 
-  if (
-    options.retryOnUnauthorized !== false &&
-    (resp.status === 401 || resp.status === 403)
-  ) {
-    cachedConfig = undefined;
-    await getShopifyStorefrontConfig({ forceRefresh: true });
-    return shopifyStorefrontRequest<T>(query, variables, {
-      retryOnUnauthorized: false,
-    });
+  if (resp.status === 401 || resp.status === 403) {
+    throw new Error(
+      `Shopify rejected the Storefront access token (${resp.status}). ` +
+        `Check SHOPIFY_STOREFRONT_ACCESS_TOKEN — it must be the Storefront API token from the store's headless/custom app, with unauthenticated read scopes enabled.`,
+    );
   }
 
   const text = await resp.text();
   const json = text ? safeJsonParse(text) : {};
-  if (!resp.ok || json.errors?.length) {
+  const errors: StorefrontGraphQLError[] = Array.isArray(json.errors) ? json.errors : [];
+
+  if (errors.some((e) => /online store channel is locked/i.test(e.message ?? ""))) {
+    // Shopify returns this for requests WITHOUT a valid token on locked/password
+    // stores — with a valid Storefront token the API works even pre-launch.
     throw new Error(
-      `Shopify Storefront API error (${resp.status}): ${JSON.stringify(json.errors ?? json)}`,
+      "Shopify rejected the request (Online Store channel is locked). This means the Storefront access token was missing or invalid for this store — verify SHOPIFY_STOREFRONT_ACCESS_TOKEN.",
+    );
+  }
+
+  if (!resp.ok || errors.length > 0) {
+    throw new Error(
+      `Shopify Storefront API error (${resp.status}): ${JSON.stringify(errors.length ? errors : json)}`,
     );
   }
 
   return json.data as T;
 }
 
-function safeJsonParse(text: string) {
+function safeJsonParse(text: string): any {
   try {
     return JSON.parse(text);
   } catch {
-    return { errors: [{ message: text }] };
+    return { errors: [{ message: text.slice(0, 300) }] };
   }
 }

@@ -5,8 +5,12 @@
  * Evolve Performance API — storefront reads products, collections, cart and checkout from the owner's Shopify store (server-side Storefront API); newsletter, content pages and support remain first-party.
  * OpenAPI spec version: 0.2.0
  */
+import type { ShopProduct } from './shopProduct';
 
-export interface UnsubscribeInfo {
-  email: string;
-  alreadyUnsubscribed: boolean;
+export interface ShopCollectionDetail {
+  id: string;
+  handle: string;
+  title: string;
+  description?: string;
+  products: ShopProduct[];
 }

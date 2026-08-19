@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { useSubmitSupportRequest } from '@workspace/api-client-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@clerk/react';
 import { getProductImage } from '@/lib/utils';
 import { Mail, MessageSquare } from 'lucide-react';
 
 export default function Support() {
-  const { user } = useUser();
   const { toast } = useToast();
   const submitRequest = useSubmitSupportRequest();
 
-  const [email, setEmail] = useState(user?.primaryEmailAddress?.emailAddress || '');
+  const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
@@ -24,8 +22,6 @@ export default function Support() {
           subject,
           message,
           orderNumber: orderNumber || undefined,
-          clerkUserId: user?.id,
-          name: user?.fullName || undefined,
         }
       });
       toast({ title: "Message Transmitted", description: "Command has received your transmission. Stand by for comms." });

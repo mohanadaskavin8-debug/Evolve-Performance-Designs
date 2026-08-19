@@ -4,7 +4,6 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
-import { ClerkProvider } from '@clerk/react';
 import { setBaseUrl } from '@workspace/api-client-react';
 
 import AppShell from '@/components/layout/AppShell';
@@ -13,13 +12,6 @@ import Shop from '@/pages/Shop';
 import ProductDetail from '@/pages/ProductDetail';
 import CollectionDetail from '@/pages/CollectionDetail';
 import Cart from '@/pages/Cart';
-import CheckoutSuccess from '@/pages/CheckoutSuccess';
-import TrackOrder from '@/pages/TrackOrder';
-import OrderDetail from '@/pages/OrderDetail';
-import Account from '@/pages/Account';
-import AccountReturnsNew from '@/pages/AccountReturnsNew';
-import SignInPage from '@/pages/SignIn';
-import SignUpPage from '@/pages/SignUp';
 import Support from '@/pages/Support';
 import Unsubscribe from '@/pages/Unsubscribe';
 import ConfirmSubscription from '@/pages/ConfirmSubscription';
@@ -41,13 +33,6 @@ function Router() {
           <Route path="/products/:slug" component={ProductDetail} />
           <Route path="/collections/:slug" component={CollectionDetail} />
           <Route path="/cart" component={Cart} />
-          <Route path="/checkout/success" component={CheckoutSuccess} />
-          <Route path="/track" component={TrackOrder} />
-          <Route path="/orders/:orderNumber" component={OrderDetail} />
-          <Route path="/account" component={Account} />
-          <Route path="/account/returns/new" component={AccountReturnsNew} />
-          <Route path="/sign-in/*?" component={SignInPage} />
-          <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/support" component={Support} />
           <Route path="/unsubscribe" component={Unsubscribe} />
           <Route path="/confirm-subscription" component={ConfirmSubscription} />
@@ -71,18 +56,14 @@ function App() {
   }, []);
 
   return (
-    <ClerkProvider 
-      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
-    >
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <Router />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 

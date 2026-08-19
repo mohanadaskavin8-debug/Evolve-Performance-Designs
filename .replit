@@ -22,6 +22,7 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
+SHOPIFY_STORE_DOMAIN = "ep-23446707.myshopify.com"
 
 [nix]
 channel = "stable-25_05"

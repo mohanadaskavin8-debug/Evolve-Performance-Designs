@@ -1,5 +1,5 @@
 import { useRoute, Link } from 'wouter';
-import { useGetCollectionBySlug } from '@workspace/api-client-react';
+import { useGetShopCollectionByHandle } from '@workspace/api-client-react';
 import { ProductCard } from '@/components/ProductCard';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
@@ -8,7 +8,7 @@ export default function CollectionDetail() {
   const [, params] = useRoute('/collections/:slug');
   const slug = params?.slug || '';
 
-  const { data: collection, isLoading, error } = useGetCollectionBySlug(slug, {
+  const { data: collection, isLoading, error } = useGetShopCollectionByHandle(slug, {
     query: { enabled: !!slug, queryKey: ['collection', slug] }
   });
 
@@ -40,7 +40,7 @@ export default function CollectionDetail() {
         
         <div className="mb-16 max-w-3xl">
           <h1 className="text-5xl md:text-6xl font-display font-bold uppercase tracking-[0.2em] text-white mb-6">
-            {collection.name} Series
+            {collection.title} Series
           </h1>
           <div className="w-24 h-1 bg-primary mb-8" />
           <p className="font-mono text-muted-foreground uppercase tracking-widest leading-relaxed">

@@ -1,194 +1,40 @@
-import { type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ClerkProvider } from '@clerk/clerk-react';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
-import {
-  Route,
-  Switch,
-  useLocation,
-  Router as WouterRouter,
-} from 'wouter';
+/**
+ * The first-party admin portal has been retired — the store is now managed
+ * entirely in Shopify Admin (products, inventory, orders, discounts,
+ * shipping, payouts). This page just points the owner in the right direction.
+ */
 
-import { AuthGuard } from '@/components/ui/auth-guard';
-import SetupPage from '@/pages/setup';
-import SignInPage from '@/pages/sign-in';
-import SignUpPage from '@/pages/sign-up';
-import DashboardPage from '@/pages/dashboard';
-import OrdersPage from '@/pages/orders/index';
-import OrderDetailPage from '@/pages/orders/detail';
-import ProductsPage from '@/pages/products/index';
-import NewProductPage from '@/pages/products/new';
-import InventoryPage from '@/pages/inventory';
-import ReturnsPage from '@/pages/returns/index';
-import ReturnDetailPage from '@/pages/returns/detail';
-import CustomersPage from '@/pages/customers/index';
-import CustomerDetailPage from '@/pages/customers/detail';
-import ContentPage from '@/pages/content';
-import DiscountsPage from '@/pages/discounts';
-import TeamPage from '@/pages/team';
-import SystemPage from '@/pages/system';
-import SupportPage from '@/pages/support';
-import ReviewsPage from '@/pages/reviews';
-import ActivityPage from '@/pages/activity';
-import ReportsPage from '@/pages/reports';
-import ShippingPage from '@/pages/shipping';
-import EmailPage from '@/pages/email/index';
-import CampaignEditorPage from '@/pages/email/campaign-editor';
-import FulfillmentPage from '@/pages/fulfillment';
+const SHOPIFY_ADMIN_URL = 'https://admin.shopify.com/store/ep-23446707';
 
-const queryClient = new QueryClient();
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-function Router() {
+export default function App() {
   return (
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/sign-up/*?" component={SignUpPage} />
-        
-        {/* Protected Routes */}
-        <Route path="/setup">
-          <AuthGuard><SetupPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/dashboard">
-          <AuthGuard><DashboardPage /></AuthGuard>
-        </Route>
-
-        <Route path="/orders">
-          <AuthGuard><OrdersPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/orders/:id">
-          <AuthGuard><OrderDetailPage /></AuthGuard>
-        </Route>
-
-        <Route path="/products">
-          <AuthGuard><ProductsPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/products/new">
-          <AuthGuard><NewProductPage /></AuthGuard>
-        </Route>
-
-        <Route path="/inventory">
-          <AuthGuard><InventoryPage /></AuthGuard>
-        </Route>
-
-        <Route path="/returns">
-          <AuthGuard><ReturnsPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/returns/:id">
-          <AuthGuard><ReturnDetailPage /></AuthGuard>
-        </Route>
-
-        <Route path="/customers">
-          <AuthGuard><CustomersPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/customers/:id">
-          <AuthGuard><CustomerDetailPage /></AuthGuard>
-        </Route>
-
-        <Route path="/content">
-          <AuthGuard><ContentPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/discounts">
-          <AuthGuard><DiscountsPage /></AuthGuard>
-        </Route>
-
-        <Route path="/shipping">
-          <AuthGuard><ShippingPage /></AuthGuard>
-        </Route>
-
-        <Route path="/email">
-          <AuthGuard><EmailPage /></AuthGuard>
-        </Route>
-        <Route path="/email/campaigns/:id">
-          <AuthGuard><CampaignEditorPage /></AuthGuard>
-        </Route>
-
-        <Route path="/fulfillment">
-          <AuthGuard><FulfillmentPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/team">
-          <AuthGuard><TeamPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/support">
-          <AuthGuard><SupportPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/reviews">
-          <AuthGuard><ReviewsPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/activity">
-          <AuthGuard><ActivityPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/reports">
-          <AuthGuard><ReportsPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/system">
-          <AuthGuard><SystemPage /></AuthGuard>
-        </Route>
-        
-        <Route path="/">
-          <AuthGuard>
-            <RedirectToDashboard />
-          </AuthGuard>
-        </Route>
-
-        <Route component={NotFound} />
-      </Switch>
-    </RoutedErrorBoundary>
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0b] text-white px-6">
+      <div className="max-w-xl w-full border border-white/10 bg-white/[0.03] p-10 md:p-14 text-center">
+        <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40 mb-6">Evolve Performance</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+          Your store is managed in Shopify
+        </h1>
+        <p className="text-white/60 leading-relaxed mb-10">
+          Products, inventory, orders, discounts, shipping and payments all live
+          in Shopify Admin now. This admin portal has been retired.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href={SHOPIFY_ADMIN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#5df179] text-black font-semibold px-8 py-3 hover:opacity-90 transition-opacity"
+          >
+            Open Shopify Admin
+          </a>
+          <a
+            href="/"
+            className="border border-white/20 text-white px-8 py-3 hover:bg-white/10 transition-colors"
+          >
+            View Storefront
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
-
-function RoutedErrorBoundary({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
-}
-
-function RedirectToDashboard() {
-  const [, setLocation] = useLocation();
-  setLocation('/dashboard');
-  return null;
-}
-
-function App() {
-  if (!CLERK_KEY) {
-    return <div className="p-8 text-destructive font-mono">Missing VITE_CLERK_PUBLISHABLE_KEY</div>;
-  }
-
-  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-
-  return (
-    <ClerkProvider
-      publishableKey={CLERK_KEY}
-      signInUrl={`${base}/sign-in`}
-      signUpUrl={`${base}/sign-up`}
-      signInFallbackRedirectUrl={`${base}/dashboard`}
-      signUpFallbackRedirectUrl={`${base}/dashboard`}
-    >
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
-  );
-}
-
-export default App;

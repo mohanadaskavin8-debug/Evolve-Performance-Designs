@@ -1,4 +1,4 @@
-import { useListProducts, useListCollections } from '@workspace/api-client-react';
+import { useListShopProducts, useListShopCollections } from '@workspace/api-client-react';
 import { ProductCard } from '@/components/ProductCard';
 import { useLocation } from 'wouter';
 import { useEffect, useState } from 'react';
@@ -12,12 +12,12 @@ export default function Shop() {
   
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
 
-  const { data, isLoading } = useListProducts({
+  const { data, isLoading } = useListShopProducts({
     collection: collectionSlug || undefined,
     limit: 50
   });
 
-  const { data: collections } = useListCollections();
+  const { data: collections } = useListShopCollections();
 
   // Extract unique themes from all products; theme filtering happens client-side
   const availableThemes = Array.from(new Set(data?.products.map(p => p.theme).filter(Boolean) as string[]));
@@ -45,10 +45,10 @@ export default function Shop() {
               {collections?.map(c => (
                 <Link 
                   key={c.id} 
-                  href={`/products?collection=${c.slug}`}
-                  className={`${collectionSlug === c.slug ? 'text-white border-b border-primary pb-1' : 'text-muted-foreground hover:text-white'} transition-colors`}
+                  href={`/products?collection=${c.handle}`}
+                  className={`${collectionSlug === c.handle ? 'text-white border-b border-primary pb-1' : 'text-muted-foreground hover:text-white'} transition-colors`}
                 >
-                  {c.name}
+                  {c.title}
                 </Link>
               ))}
             </div>

@@ -6,7 +6,17 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface UnsubscribeInfo {
-  email: string;
-  alreadyUnsubscribed: boolean;
+export interface ShopCartLine {
+  /** Cart line GID */
+  id: string;
+  quantity: number;
+  /** Variant GID */
+  merchandiseId: string;
+  productTitle: string;
+  productHandle: string;
+  variantTitle: string;
+  priceInCents: number;
+  lineTotalInCents: number;
+  /** @nullable */
+  imageUrl?: string | null;
 }

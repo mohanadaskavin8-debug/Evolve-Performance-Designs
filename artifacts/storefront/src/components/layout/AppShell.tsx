@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'wouter';
-import { ShoppingCart, Menu, X, User, ChevronRight, ArrowRight, CheckCircle } from 'lucide-react';
-import { useGetSiteSettings, useGetCart, useSubscribeNewsletter } from '@workspace/api-client-react';
-import { getCartSessionId } from '@/lib/utils';
-import { useUser } from '@clerk/react';
+import { ShoppingCart, Menu, X, ChevronRight, ArrowRight, CheckCircle } from 'lucide-react';
+import { useGetSiteSettings, useGetShopCart, getGetShopCartQueryKey, useSubscribeNewsletter } from '@workspace/api-client-react';
+import { useCartId } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,8 +20,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
 function Navbar() {
   const { data: settings } = useGetSiteSettings({ query: { queryKey: ['site-settings'] } });
-  const { data: cart } = useGetCart({ sessionId: getCartSessionId() }, { query: { queryKey: ['cart', getCartSessionId()] } });
-  const { isSignedIn } = useUser();
+  const cartId = useCartId();
+  const { data: cart } = useGetShopCart(
+    { cartId: cartId ?? undefined },
+    { query: { queryKey: getGetShopCartQueryKey({ cartId: cartId ?? undefined }), enabled: !!cartId } },
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -66,21 +68,11 @@ function Navbar() {
           </nav>
 
           <div className="flex items-center gap-6">
-            {isSignedIn ? (
-              <Link href="/account" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-white transition-colors">
-                <User className="w-5 h-5" />
-              </Link>
-            ) : (
-              <Link href="/sign-in" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-white transition-colors">
-                <span className="text-xs font-mono uppercase tracking-widest">Login</span>
-              </Link>
-            )}
-            
             <Link href="/cart" className="relative text-muted-foreground hover:text-white transition-colors flex items-center">
               <ShoppingCart className="w-5 h-5" />
-              {cart?.itemCount ? (
+              {cart?.totalQuantity ? (
                 <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-sm">
-                  {cart.itemCount}
+                  {cart.totalQuantity}
                 </span>
               ) : null}
             </Link>
@@ -105,12 +97,8 @@ function Navbar() {
                 Series <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
-              <Link href="/track" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                Track Ops <ChevronRight className="w-6 h-6 text-primary" />
-              </Link>
-              <div className="h-px bg-white/10 w-full" />
-              <Link href={isSignedIn ? '/account' : '/sign-in'} className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                {isSignedIn ? 'Profile' : 'Authenticate'} <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/support" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                Support <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
             </nav>
           </motion.div>
@@ -201,7 +189,6 @@ function Footer() {
           <ul className="space-y-4 text-sm font-mono text-muted-foreground uppercase tracking-wider">
             <li><Link href="/products" className="hover:text-primary transition-colors">All Gear</Link></li>
             <li><Link href="/collections/all" className="hover:text-primary transition-colors">Series</Link></li>
-            <li><Link href="/track" className="hover:text-primary transition-colors">Track Ops</Link></li>
           </ul>
         </div>
         
@@ -231,7 +218,6 @@ function Footer() {
         <div className="flex gap-8 mt-6 md:mt-0">
           <Link href="/pages/privacy" className="hover:text-white transition-colors">Privacy</Link>
           <Link href="/pages/terms" className="hover:text-white transition-colors">Terms</Link>
-           <a href="/admin/" className="hover:text-white transition-colors">Admin</a>
         </div>
       </div>
     </footer>

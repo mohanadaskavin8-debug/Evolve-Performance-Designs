@@ -6,7 +6,11 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface UnsubscribeInfo {
-  email: string;
-  alreadyUnsubscribed: boolean;
-}
+export type ListShopProductsParams = {
+/**
+ * Collection handle to filter by
+ */
+collection?: string;
+search?: string;
+limit?: number;
+};

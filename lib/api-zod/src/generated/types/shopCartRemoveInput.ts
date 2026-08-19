@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface UnsubscribeInfo {
-  email: string;
-  alreadyUnsubscribed: boolean;
+export interface ShopCartRemoveInput {
+  cartId: string;
+  lineId: string;
 }

@@ -1,59 +1,56 @@
 # Evolve Performance
 
-E-commerce platform for anime/game-inspired lifting straps: customer storefront, admin operations portal, and automated fulfillment pipeline.
+E-commerce storefront for anime/game-inspired lifting straps. **Shopify is the system of record** — the owner manages products, inventory, orders, discounts and shipping in Shopify Admin; Shopify's hosted checkout handles payment, shipping and taxes. The custom storefront keeps its cinematic design and reads Shopify data server-side.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (binds `PORT`; dev script = esbuild build + start, so restart the workflow to pick up changes)
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run seed` — seed website content (settings/pages/homepage sections only)
+- Required env: `DATABASE_URL`, `SHOPIFY_STORE_DOMAIN` (e.g. `ep-23446707.myshopify.com`), `SHOPIFY_STOREFRONT_ACCESS_TOKEN` (Storefront API public token)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- API: Express 5 · DB: PostgreSQL + Drizzle ORM (website content + support/newsletter only)
+- Commerce: Shopify Storefront API (GraphQL, version pinned in `shopifyStorefrontClient.ts`)
+- API codegen: Orval from `lib/api-spec/openapi.yaml` → `lib/api-client-react` hooks + `lib/api-zod`
+- Email: Resend via Replit integration (owner notifications for support requests, newsletter/marketing loop)
 
 ## Where things live
 
-- `artifacts/storefront` — customer storefront (root path `/`)
-- `artifacts/admin` — admin portal (`/admin`), Clerk-gated
-- `artifacts/api-server` — Express API (`/api`)
-- `lib/db/src/schema/commerce.ts` — source of truth for DB schema (orders, shipments, shipment_events, transactional_emails, …)
-- `lib/api-spec/openapi.yaml` — source of truth for API contracts; codegen produces `lib/api-client-react` hooks + `lib/api-zod`
-- `artifacts/api-server/src/lib/shipstation.ts` — the ONLY module allowed to call the ShipStation API
-- `artifacts/api-server/src/lib/fulfillment.ts` — fulfillment engine (push queue, label/tracking sync, milestone emails, 60s loop)
-- `artifacts/api-server/src/lib/email.ts` — Resend transactional emails (idempotent per order+type)
+- `artifacts/storefront` — customer storefront (root path `/`): home, shop, product detail, collections, cart, support, newsletter pages
+- `artifacts/admin` — static notice page pointing to Shopify Admin (the old custom admin portal was retired)
+- `artifacts/api-server` — Express API (`/api`): `/shop/*` (Shopify proxy), `/support`, `/newsletter`, `/marketing`, `/content`
+- `artifacts/api-server/src/lib/shopifyStorefrontClient.ts` — the ONLY module that talks to Shopify; env-based config, fails loudly (503) when unconfigured
+- `artifacts/api-server/src/routes/shop.ts` — products/collections/cart endpoints; converts money to integer cents; cart mutations are RPC-style POSTs
 
 ## Architecture decisions
 
-- **Payment success always wins**: Stripe webhook records the order first; ShipStation push happens async afterwards with retry/backoff — fulfillment being down can never fail a sale.
-- **Fraud holds block automation**: orders with `requiresManualReview` are never auto-pushed; clearing the flag in admin resumes fulfillment.
-- **Labels are bought by the owner in the ShipStation UI**, never via API. The app only pushes orders and reads back labels/tracking. `SHIPSTATION_TEST_MODE` defaults to `true`.
-- **ShipStation webhooks are untrusted hints**: they only trigger an immediate re-poll; all persisted data comes from authenticated API reads.
-- **Milestone emails are DB-idempotent**: `transactional_emails` claim-first unique insert on (orderId, emailType) — six milestones, no duplicates.
-- **Calculated shipping rates fail open**: any ShipStation error at checkout silently falls back to the rate's stored flat price.
+- **Shopify token stays server-side**: the browser never sees `SHOPIFY_STOREFRONT_ACCESS_TOKEN`; the storefront calls `/api/shop/*` only.
+- **No local commerce state**: cart lives in Shopify (cart id in browser localStorage `ep_shopify_cart_id`); checkout = redirect to `cart.checkoutUrl` (Shopify hosted checkout). No Stripe, no ShipStation, no user accounts (Clerk removed).
+- **Money is integer cents** end-to-end in the API (`priceInCents` etc.), converted server-side from Shopify's decimal amounts.
+- **Featured products** = Shopify tag `featured` (fallback: 4 newest). **Theme** = first non-"featured" tag.
+- **Old commerce DB tables were kept** (orders, products, etc.) — non-destructive migration; only website-content tables are actively used (site_settings, homepage_sections, website_pages, support_requests, newsletter_subscribers + marketing tables).
+- **Support requests**: DB insert + fire-and-forget email to owner (Resend, Reply-To = customer).
 
 ## Product
 
-- Storefront: shop, cart, Stripe checkout, order tracking timeline (real carrier events once shipped), account & returns.
-- Admin ("EVOLVE OS"): dashboard, orders (fraud review, fulfillment automation panel, manual push/retry), products (incl. logistics & customs fields), inventory, shipping zones/rates (flat, free, live carrier-calculated), fulfillment center (connection state, pipeline stats, shipments table), system status, reports, team roles.
+- Storefront: cinematic dark theme; shop grid, product detail with size variants, cart, Shopify checkout handoff, support form, newsletter signup with double opt-in.
+- Store owner works in Shopify Admin (`https://admin.shopify.com/store/ep-23446707`); the store is pre-launch and password-protected until launched.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The owner is non-technical: explain things in plain language, avoid jargon.
 
 ## Gotchas
 
 - After editing `lib/api-spec/openapi.yaml`, always run `pnpm --filter @workspace/api-spec run codegen` (regenerates hooks + zod, then typechecks libs).
-- Stripe webhook route is raw-body mounted before JSON middleware; keep it that way.
-- Admin API status values are `healthy | degraded | unhealthy` (ShipStation not connected ⇒ `degraded`, not an outage).
+- Cart GIDs contain `?key=…` — pass cart ids in query params/POST bodies only, never as path params.
+- A stale/expired cart id must return the empty-cart shape (`id: null`), and the client clears localStorage when it sees it.
+- Shopify "Online Store channel is locked" or 401/403 from the Storefront API ⇒ bad/missing token (or store not accessible), not a code bug.
 - Drizzle: never interpolate JS arrays into raw ``sql`… = ANY(${arr})` `` — use `inArray()` (raw `pool.query` with a real array param is fine).
 
 ## Pointers

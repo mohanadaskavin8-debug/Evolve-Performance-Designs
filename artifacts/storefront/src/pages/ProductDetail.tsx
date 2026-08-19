@@ -1,64 +1,67 @@
 import { useRoute } from 'wouter';
-import { useGetProductBySlug, useAddCartItem, useListProductReviews, useGetCart } from '@workspace/api-client-react';
-import { getProductImage, formatPrice, getCartSessionId } from '@/lib/utils';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import {
+  useGetShopProductByHandle,
+  useAddShopCartLines,
+  getGetShopCartQueryKey,
+} from '@workspace/api-client-react';
+import { getProductImage, formatPrice, getStoredCartId, storeCartId } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 import { ChevronRight, ArrowLeft, Shield, Truck, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Link } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetCartQueryKey } from '@workspace/api-client-react';
 
 export default function ProductDetail() {
   const [, params] = useRoute('/products/:slug');
-  const slug = params?.slug || '';
+  const handle = params?.slug || '';
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: product, isLoading, error } = useGetProductBySlug(slug, {
-    query: { enabled: !!slug, queryKey: ['product', slug] }
+  const { data: product, isLoading, error } = useGetShopProductByHandle(handle, {
+    query: { enabled: !!handle, queryKey: ['product', handle] }
   });
 
-  const { data: reviews } = useListProductReviews(slug, {
-    query: { enabled: !!slug, queryKey: ['product-reviews', slug] }
-  });
-
-  const addCartItem = useAddCartItem();
+  const addLines = useAddShopCartLines();
   
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
 
-  // Initialize selected variant when product loads
-  if (product && !selectedVariantId && product.variants.length > 0) {
-    const defaultVariant = product.variants.find(v => v.availableQuantity > 0) || product.variants[0];
-    setSelectedVariantId(defaultVariant.id);
-  }
+  // (Re)initialize selection whenever a different product loads — the same
+  // component instance is reused when navigating between product pages.
+  useEffect(() => {
+    if (!product) return;
+    const defaultVariant = product.variants.find(v => v.availableForSale) || product.variants[0];
+    setSelectedVariantId(defaultVariant?.id ?? null);
+    setQuantity(1);
+  }, [product?.id]);
 
   const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
-  const isOutOfStock = selectedVariant?.availableQuantity === 0;
+  const isOutOfStock = !!selectedVariant && !selectedVariant.availableForSale;
+  const maxQuantity = selectedVariant?.quantityAvailable ?? null;
 
   const handleAddToCart = async () => {
     if (!selectedVariantId) return;
     setAdding(true);
     try {
-      await addCartItem.mutateAsync({
+      const cart = await addLines.mutateAsync({
         data: {
-          sessionId: getCartSessionId(),
+          cartId: getStoredCartId(),
           variantId: selectedVariantId,
           quantity
         }
       });
-      queryClient.invalidateQueries({ queryKey: getGetCartQueryKey({ sessionId: getCartSessionId() }) });
+      storeCartId(cart.id);
+      queryClient.invalidateQueries({ queryKey: getGetShopCartQueryKey({ cartId: cart.id ?? undefined }) });
       toast({
         title: "Added to loadout",
-        description: `${quantity}x ${product?.name} ready for deployment.`,
+        description: `${quantity}x ${product?.title} ready for deployment.`,
       });
     } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || "Failed to add item.",
+        description: (err?.data as any)?.error || err.message || "Failed to add item.",
       });
     } finally {
       setAdding(false);
@@ -86,7 +89,7 @@ export default function ProductDetail() {
     );
   }
 
-  const cinematicImage = getProductImage(product.slug);
+  const cinematicImage = getProductImage(product.handle, product.imageUrl);
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-32">
@@ -96,14 +99,14 @@ export default function ProductDetail() {
           <ArrowLeft className="w-4 h-4" /> Armory
         </Link>
         <ChevronRight className="w-3 h-3" />
-        <span className="text-white">{product.name}</span>
+        <span className="text-white">{product.title}</span>
       </div>
 
       {/* Cinematic Bleed Header */}
       <div className="w-full relative h-[30vh] md:h-[50vh] bg-black border-y border-white/10 flex items-center justify-center overflow-hidden mb-16">
         <img 
           src={cinematicImage} 
-          alt={product.name}
+          alt={product.title}
           className="strap-panorama absolute inset-0 opacity-80"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
@@ -120,7 +123,7 @@ export default function ProductDetail() {
               </span>
             )}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold uppercase tracking-[0.1em] text-white mb-4 leading-tight">
-              {product.name}
+              {product.title}
             </h1>
             <div className="text-2xl font-mono font-bold text-white tracking-wider mb-8">
               {selectedVariant ? formatPrice(selectedVariant.priceInCents) : formatPrice(product.variants[0]?.priceInCents)}
@@ -135,12 +138,12 @@ export default function ProductDetail() {
             <div className="border border-white/5 bg-white/[0.02] p-6">
               <Shield className="w-6 h-6 text-primary mb-4" />
               <h4 className="font-display font-bold uppercase tracking-widest text-white mb-2">Specs</h4>
-              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">{product.materials || 'Military-grade webbing, reinforced stitching, edge-to-edge sublimation print.'}</p>
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Military-grade webbing, reinforced stitching, edge-to-edge sublimation print.</p>
             </div>
             <div className="border border-white/5 bg-white/[0.02] p-6">
               <RotateCcw className="w-6 h-6 text-primary mb-4" />
               <h4 className="font-display font-bold uppercase tracking-widest text-white mb-2">Deployment</h4>
-              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">{product.shippingInfo || 'Ships within 48h. Lifetime structural warranty.'}</p>
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">Ships worldwide. Shipping options and rates shown at checkout.</p>
             </div>
           </div>
         </div>
@@ -157,7 +160,7 @@ export default function ProductDetail() {
                 <div className="flex flex-wrap gap-3">
                   {product.variants.map((variant) => {
                     const isSelected = selectedVariantId === variant.id;
-                    const isAvail = variant.availableQuantity > 0;
+                    const isAvail = variant.availableForSale;
                     return (
                       <button
                         key={variant.id}
@@ -171,7 +174,7 @@ export default function ProductDetail() {
                               : 'bg-white/5 border border-white/5 text-white/30 cursor-not-allowed line-through'
                         }`}
                       >
-                        {variant.size || variant.color || variant.sku}
+                        {variant.title || variant.sku}
                       </button>
                     );
                   })}
@@ -192,7 +195,7 @@ export default function ProductDetail() {
                 <button 
                   onClick={() => setQuantity(quantity + 1)}
                   className="px-4 py-2 text-white hover:bg-white/10 transition-colors font-mono"
-                  disabled={isOutOfStock || (selectedVariant && quantity >= selectedVariant.availableQuantity)}
+                  disabled={isOutOfStock || (maxQuantity != null && quantity >= maxQuantity)}
                 >+</button>
               </div>
             </div>
@@ -223,31 +226,6 @@ export default function ProductDetail() {
         </div>
 
       </div>
-
-      {/* Reviews Section */}
-      {reviews && reviews.length > 0 && (
-        <div className="container mx-auto px-6 md:px-12 mt-32">
-          <div className="border-t border-white/10 pt-16">
-            <h2 className="text-2xl font-display font-bold uppercase tracking-[0.2em] text-white mb-12 text-center">Field Reports</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {reviews.map(review => (
-                <div key={review.id} className="border border-white/5 bg-white/[0.02] p-8">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className={`text-lg ${i < review.rating ? 'text-primary' : 'text-white/20'}`}>★</span>
-                    ))}
-                  </div>
-                  <h4 className="font-display font-bold uppercase tracking-widest text-white mb-3 text-lg">{review.title}</h4>
-                  <p className="font-mono text-sm text-muted-foreground uppercase tracking-wider leading-relaxed mb-6">{review.body}</p>
-                  <div className="font-mono text-xs text-white/40 uppercase tracking-widest border-t border-white/5 pt-4">
-                    Op: {review.reviewerName} {review.isVerified && <span className="text-primary ml-2">✓ Verified</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

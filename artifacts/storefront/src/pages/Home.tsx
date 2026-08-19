@@ -1,4 +1,4 @@
-import { useListFeaturedProducts, useGetHomepageContent } from '@workspace/api-client-react';
+import { useListFeaturedShopProducts, useGetHomepageContent } from '@workspace/api-client-react';
 import { ProductCard } from '@/components/ProductCard';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'wouter';
@@ -7,7 +7,7 @@ import { getProductImage } from '@/lib/utils';
 import { useRef } from 'react';
 
 export default function Home() {
-  const { data: products, isLoading: productsLoading } = useListFeaturedProducts();
+  const { data: products, isLoading: productsLoading } = useListFeaturedShopProducts();
   const { data: content, isLoading: contentLoading } = useGetHomepageContent();
 
   const heroRef = useRef<HTMLDivElement>(null);
@@ -19,7 +19,7 @@ export default function Home() {
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
-  if (productsLoading || contentLoading) {
+  if (contentLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-16 h-16 border-t-2 border-primary rounded-full animate-spin"></div>
@@ -106,22 +106,30 @@ export default function Home() {
           </div>
           
           <div className="flex flex-col gap-12">
-            {products?.map((product, index) => (
-              <motion.div 
-                key={product.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-            
-            {products?.length === 0 && (
-              <div className="text-center py-20 font-mono text-muted-foreground uppercase tracking-widest border border-white/10">
-                No active drops found.
+            {productsLoading ? (
+              <div className="flex justify-center py-20">
+                <div className="w-10 h-10 border-t-2 border-primary rounded-full animate-spin"></div>
               </div>
+            ) : (
+              <>
+                {products?.map((product, index) => (
+                  <motion.div 
+                    key={product.id}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+
+                {!products?.length && (
+                  <div className="text-center py-20 font-mono text-muted-foreground uppercase tracking-widest border border-white/10">
+                    New drops incoming. Check back soon.
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

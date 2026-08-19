@@ -6,7 +6,13 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface UnsubscribeInfo {
-  email: string;
-  alreadyUnsubscribed: boolean;
+export interface ShopCartAddInput {
+  /**
+     * Existing cart GID; omit or null to create a new cart
+     * @nullable
+     */
+  cartId?: string | null;
+  /** Variant GID to add */
+  variantId: string;
+  quantity: number;
 }
