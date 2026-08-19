@@ -259,7 +259,6 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
             title: string;
             sku: string | null;
             availableForSale: boolean;
-            quantityAvailable: number | null;
             price: GqlMoney;
             compareAtPrice: GqlMoney | null;
           }[];
@@ -284,7 +283,6 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
               title
               sku
               availableForSale
-              quantityAvailable
               price { amount }
               compareAtPrice { amount }
             }
@@ -320,7 +318,9 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
           priceInCents: toCents(v.price.amount),
           compareAtPriceInCents: variantCompareAt > 0 ? variantCompareAt : null,
           availableForSale: v.availableForSale,
-          quantityAvailable: v.quantityAvailable,
+          // Quantity inventory requires an additional unauthenticated scope.
+          // The availability flag is sufficient for the storefront controls.
+          quantityAvailable: null,
         };
       }),
       tags: p.tags,
