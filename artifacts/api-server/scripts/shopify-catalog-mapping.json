@@ -1,0 +1,215 @@
+{
+  "migratedAt": "2026-08-19T02:38:37.623Z",
+  "products": [
+    {
+      "slug": "jdm-night-city",
+      "productGid": "gid://shopify/Product/9820343959782",
+      "variants": [
+        {
+          "sku": "JDM-NIGHT-CITY-XSS",
+          "gid": "gid://shopify/ProductVariant/48208985719014",
+          "title": "XS/S"
+        },
+        {
+          "sku": "JDM-NIGHT-CITY-ML",
+          "gid": "gid://shopify/ProductVariant/48208985751782",
+          "title": "M/L"
+        },
+        {
+          "sku": "JDM-NIGHT-CITY-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208985784550",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "christ-redeemer-sunset",
+      "productGid": "gid://shopify/Product/9820343992550",
+      "variants": [
+        {
+          "sku": "CHRIST-REDEEMER-SUNSET-XSS",
+          "gid": "gid://shopify/ProductVariant/48208985915622",
+          "title": "XS/S"
+        },
+        {
+          "sku": "CHRIST-REDEEMER-SUNSET-ML",
+          "gid": "gid://shopify/ProductVariant/48208985948390",
+          "title": "M/L"
+        },
+        {
+          "sku": "CHRIST-REDEEMER-SUNSET-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208985981158",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "neon-japan",
+      "productGid": "gid://shopify/Product/9820344025318",
+      "variants": [
+        {
+          "sku": "NEON-JAPAN-XSS",
+          "gid": "gid://shopify/ProductVariant/48208986046694",
+          "title": "XS/S"
+        },
+        {
+          "sku": "NEON-JAPAN-ML",
+          "gid": "gid://shopify/ProductVariant/48208986079462",
+          "title": "M/L"
+        },
+        {
+          "sku": "NEON-JAPAN-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208986112230",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "knight-warrior",
+      "productGid": "gid://shopify/Product/9820344058086",
+      "variants": [
+        {
+          "sku": "KNIGHT-WARRIOR-XSS",
+          "gid": "gid://shopify/ProductVariant/48208986210534",
+          "title": "XS/S"
+        },
+        {
+          "sku": "KNIGHT-WARRIOR-ML",
+          "gid": "gid://shopify/ProductVariant/48208986243302",
+          "title": "M/L"
+        },
+        {
+          "sku": "KNIGHT-WARRIOR-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208986276070",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "ninja-fire",
+      "productGid": "gid://shopify/Product/9820344090854",
+      "variants": [
+        {
+          "sku": "NINJA-FIRE-XSS",
+          "gid": "gid://shopify/ProductVariant/48208986407142",
+          "title": "XS/S"
+        },
+        {
+          "sku": "NINJA-FIRE-ML",
+          "gid": "gid://shopify/ProductVariant/48208986439910",
+          "title": "M/L"
+        },
+        {
+          "sku": "NINJA-FIRE-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208986472678",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "military-green",
+      "productGid": "gid://shopify/Product/9820344123622",
+      "variants": [
+        {
+          "sku": "MILITARY-GREEN-XSS",
+          "gid": "gid://shopify/ProductVariant/48208986505446",
+          "title": "XS/S"
+        },
+        {
+          "sku": "MILITARY-GREEN-ML",
+          "gid": "gid://shopify/ProductVariant/48208986538214",
+          "title": "M/L"
+        },
+        {
+          "sku": "MILITARY-GREEN-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208986570982",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "desert-war",
+      "productGid": "gid://shopify/Product/9820344156390",
+      "variants": [
+        {
+          "sku": "DESERT-WAR-XSS",
+          "gid": "gid://shopify/ProductVariant/48208986669286",
+          "title": "XS/S"
+        },
+        {
+          "sku": "DESERT-WAR-ML",
+          "gid": "gid://shopify/ProductVariant/48208986702054",
+          "title": "M/L"
+        },
+        {
+          "sku": "DESERT-WAR-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208986734822",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "werewolf-blood-moon",
+      "productGid": "gid://shopify/Product/9820344189158",
+      "variants": [
+        {
+          "sku": "WEREWOLF-BLOOD-MOON-XSS",
+          "gid": "gid://shopify/ProductVariant/48208986865894",
+          "title": "XS/S"
+        },
+        {
+          "sku": "WEREWOLF-BLOOD-MOON-ML",
+          "gid": "gid://shopify/ProductVariant/48208986898662",
+          "title": "M/L"
+        },
+        {
+          "sku": "WEREWOLF-BLOOD-MOON-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208986931430",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "soccer-stadium",
+      "productGid": "gid://shopify/Product/9820344221926",
+      "variants": [
+        {
+          "sku": "SOCCER-STADIUM-XSS",
+          "gid": "gid://shopify/ProductVariant/48208987062502",
+          "title": "XS/S"
+        },
+        {
+          "sku": "SOCCER-STADIUM-ML",
+          "gid": "gid://shopify/ProductVariant/48208987095270",
+          "title": "M/L"
+        },
+        {
+          "sku": "SOCCER-STADIUM-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208987128038",
+          "title": "XL/XXL"
+        }
+      ]
+    },
+    {
+      "slug": "cyberpunk-girl",
+      "productGid": "gid://shopify/Product/9820344254694",
+      "variants": [
+        {
+          "sku": "CYBERPUNK-GIRL-XSS",
+          "gid": "gid://shopify/ProductVariant/48208987193574",
+          "title": "XS/S"
+        },
+        {
+          "sku": "CYBERPUNK-GIRL-ML",
+          "gid": "gid://shopify/ProductVariant/48208987226342",
+          "title": "M/L"
+        },
+        {
+          "sku": "CYBERPUNK-GIRL-XLXXL",
+          "gid": "gid://shopify/ProductVariant/48208987259110",
+          "title": "XL/XXL"
+        }
+      ]
+    }
+  ]
+}
