@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "FMh--Vjby_jdroUrqnwJM"
+uri = "file://exports/shopify-products-import.csv"
+type = "table"
+title = "Shopify product import CSV"
+description = "All 10 Evolve Performance strap designs with sizes, SKUs, prices, and stock — import via Shopify Admin → Products → Import (only needed if your store doesn't have the products yet)."
