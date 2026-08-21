@@ -37,6 +37,7 @@ type GqlProductCard = {
   id: string;
   handle: string;
   title: string;
+  productType: string;
   availableForSale: boolean;
   tags: string[];
   featuredImage: GqlImage;
@@ -50,6 +51,7 @@ function mapProductCard(p: GqlProductCard) {
     id: p.id,
     handle: p.handle,
     title: p.title,
+    productType: p.productType || null,
     priceMinInCents: toCents(p.priceRange.minVariantPrice.amount),
     priceMaxInCents: toCents(p.priceRange.maxVariantPrice.amount),
     compareAtPriceInCents: compareAt > 0 ? compareAt : null,
@@ -65,6 +67,7 @@ const PRODUCT_CARD_FRAGMENT = /* GraphQL */ `
     id
     handle
     title
+    productType
     availableForSale
     tags
     featuredImage { url }
@@ -246,6 +249,7 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
         id: string;
         handle: string;
         title: string;
+        productType: string;
         description: string;
         descriptionHtml: string;
         availableForSale: boolean;
@@ -270,6 +274,7 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
           id
           handle
           title
+          productType
           description
           descriptionHtml
           availableForSale
@@ -303,6 +308,7 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
       id: p.id,
       handle: p.handle,
       title: p.title,
+      productType: p.productType || null,
       description: p.description,
       descriptionHtml: p.descriptionHtml || null,
       theme: deriveTheme(p.tags),

@@ -11,6 +11,11 @@ export interface ShopProductDetail {
   id: string;
   handle: string;
   title: string;
+  /**
+     * Shopify "Product type" field, used to group products into categories
+     * @nullable
+     */
+  productType?: string | null;
   description: string;
   /** @nullable */
   descriptionHtml?: string | null;

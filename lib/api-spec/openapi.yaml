@@ -561,6 +561,9 @@ components:
           type: string
         title:
           type: string
+        productType:
+          type: ["string", "null"]
+          description: Shopify "Product type" field, used to group products into categories
         priceMinInCents:
           type: integer
         priceMaxInCents:
@@ -618,6 +621,9 @@ components:
           type: string
         title:
           type: string
+        productType:
+          type: ["string", "null"]
+          description: Shopify "Product type" field, used to group products into categories
         description:
           type: string
         descriptionHtml:

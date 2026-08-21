@@ -13,8 +13,9 @@ description: How this project talks to Shopify, token gotchas, and how to smoke-
 
 ## Gotchas
 - Storefront API error "Online Store channel is locked"or 401/403 ⇒ token/store-access problem (wrong token type, unpublished sales channel, or store transferred), not a code bug. Products invisible via API but visible in admin ⇒ not published to the headless/custom app's sales channel.
+- Optional scopes: querying `quantityAvailable` requires `unauthenticated_read_product_inventory` and hard-errors the whole query when the token lacks it — don't query it; `availableForSale` is sufficient for storefront controls.
 - Cart GIDs embed `?key=…` — cart ids only travel in query params or POST bodies, never path params.
 - Expired/invalid carts: Shopify returns null — API returns an empty-cart shape (`id: null`) and the client clears its stored cart id.
 
 ## Smoke-testing without the owner's token
-The Replit Shopify connector (slug `shopify-store` for `listConnections`) exposes Admin API access to a populated dev store. Pattern: mint an ephemeral Storefront API token via Admin GraphQL `storefrontAccessTokenCreate`, run a throwaway server instance with the token + dev-store domain inline (nothing persisted), curl the endpoints, then `storefrontAccessTokenDelete` it. A repo-root helper script wraps Admin GraphQL calls through the connector proxy.
+The Replit Shopify connector's dev store can stand in for the owner's store: mint an ephemeral Storefront token via Admin GraphQL (`storefrontAccessTokenCreate`), test, then delete it (`storefrontAccessTokenDelete`) — never persist it.

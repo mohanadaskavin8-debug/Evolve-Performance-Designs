@@ -1,67 +1,74 @@
 import { Link } from 'wouter';
 import { ShopProduct } from '@workspace/api-client-react';
 import { formatPrice, getProductImage } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { categorizeProduct, getCategory } from '@/lib/categories';
+import { Play } from 'lucide-react';
 
-interface ProductCardProps {
-  product: ShopProduct;
-}
+export function ProductCard({ product }: { product: ShopProduct }) {
+  const categorySlug = categorizeProduct(product);
+  const category = getCategory(categorySlug);
 
-export function ProductCard({ product }: ProductCardProps) {
   return (
-    <Link href={`/products/${product.handle}`}>
-      <motion.div 
-        className="group relative flex flex-col cursor-pointer border border-white/10 bg-black overflow-hidden"
-        whileHover={{ y: -2 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
-        {/* The Panorama Strip */}
-        <div className="relative w-full h-[120px] md:h-[180px] lg:h-[220px] overflow-hidden bg-black flex items-center justify-center">
+    <Link href={`/products/${product.handle}`} data-testid={`card-product-${product.handle}`}>
+      <div className="group relative flex flex-col cursor-pointer">
+        {/* The Card */}
+        <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-4">
+          {/* Scanlines layer */}
+          <div className="absolute inset-0 scanlines opacity-50 z-20 mix-blend-overlay pointer-events-none" />
+          
           <img
             src={getProductImage(product.handle, product.imageUrl)}
             alt={product.title}
-            className="strap-panorama absolute inset-0 transition-transform duration-1000 group-hover:scale-110"
+            className="absolute inset-0 w-full h-full object-cover z-0 grayscale mix-blend-luminosity opacity-60 group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+
+          <div className="absolute inset-0 bg-black/40 z-10 group-hover:bg-black/10 transition-colors duration-500 pointer-events-none" />
           
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-95 group-hover:scale-100">
-            <div className="border border-primary/50 bg-black/50 backdrop-blur-md px-8 py-3 text-white font-mono uppercase tracking-[0.2em] text-xs">
-              View Specs
+          {/* Center Play Button Overlay */}
+          <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+            <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center text-black backdrop-blur-sm shadow-[0_0_20px_rgba(255,0,0,0.8)] opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
+               <Play className="w-6 h-6 ml-1" fill="currentColor" />
             </div>
           </div>
 
-          {product.theme && (
-            <div className="absolute top-4 left-4 bg-black/80 border border-white/20 backdrop-blur-md px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground z-10">
-              {product.theme}
-            </div>
-          )}
-          
-          {!product.availableForSale && (
-            <div className="absolute top-4 right-4 bg-destructive text-destructive-foreground px-3 py-1 font-mono text-[10px] uppercase tracking-widest z-10">
-              Out of Stock
-            </div>
-          )}
+          <div className="absolute inset-0 border-[0px] border-primary/0 group-hover:border-[2px] group-hover:border-primary transition-all duration-300 z-30 pointer-events-none" />
+
+          {/* Recording indicator */}
+          <div className="absolute top-4 left-4 z-40 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(255,0,0,0.8)]" />
+            <span className="text-primary font-mono text-[10px] uppercase tracking-widest font-bold">Rec</span>
+          </div>
+
+          {/* Badges */}
+          <div className="absolute top-4 right-4 z-40 flex flex-col gap-2 items-end">
+            {product.theme && (
+              <div className="bg-black/80 border border-primary/50 text-primary px-2 py-1 font-mono text-[10px] uppercase tracking-widest backdrop-blur-md">
+                {product.theme}
+              </div>
+            )}
+            {!product.availableForSale && (
+              <div className="bg-black/80 border border-white/20 text-white px-2 py-1 font-mono text-[10px] uppercase tracking-widest backdrop-blur-md">
+                Out of Stock
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Product Meta */}
-        <div className="p-6 flex flex-col md:flex-row md:items-end justify-between gap-4 bg-background/50 backdrop-blur-sm border-t border-white/5">
-          <div>
-            <h3 className="font-display font-bold uppercase tracking-[0.15em] text-xl group-hover:text-primary transition-colors text-white">
-              {product.title}
-            </h3>
-            <p className="font-mono text-xs text-muted-foreground mt-2 uppercase tracking-widest">
-              Lifting Straps
-            </p>
-          </div>
-          <div className="text-right">
-            <span className="font-mono text-lg font-bold text-white tracking-wider">
+        {/* Labels Beneath */}
+        <div className="text-left w-full z-10">
+          <h3 className="font-display font-bold uppercase tracking-[0.15em] text-xl text-white group-hover:text-primary transition-colors glitch-text" data-text={product.title}>
+            {product.title}
+          </h3>
+          <div className="flex justify-between items-center text-xs font-mono uppercase tracking-widest text-muted-foreground mt-2">
+            <span>{category?.name || 'Lifting Straps'}</span>
+            <span className="text-white group-hover:text-primary transition-colors duration-300">
               {product.priceMinInCents === product.priceMaxInCents 
                 ? formatPrice(product.priceMinInCents) 
                 : `${formatPrice(product.priceMinInCents)} - ${formatPrice(product.priceMaxInCents)}`}
             </span>
           </div>
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
 }

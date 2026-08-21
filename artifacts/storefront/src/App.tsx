@@ -4,11 +4,13 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { MotionConfig } from 'framer-motion';
 import { setBaseUrl } from '@workspace/api-client-react';
 
 import AppShell from '@/components/layout/AppShell';
 import Home from '@/pages/Home';
 import Shop from '@/pages/Shop';
+import Category from '@/pages/Category';
 import ProductDetail from '@/pages/ProductDetail';
 import CollectionDetail from '@/pages/CollectionDetail';
 import Cart from '@/pages/Cart';
@@ -29,6 +31,7 @@ function Router() {
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/category/:slug" component={Category} />
           <Route path="/products" component={Shop} />
           <Route path="/products/:slug" component={ProductDetail} />
           <Route path="/collections/:slug" component={CollectionDetail} />
@@ -58,9 +61,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
+        {/* reducedMotion="user" makes framer-motion honor the OS reduce-motion setting */}
+        <MotionConfig reducedMotion="user">
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <Router />
+          </WouterRouter>
+        </MotionConfig>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

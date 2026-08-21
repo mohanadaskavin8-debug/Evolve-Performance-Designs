@@ -57,12 +57,16 @@ function Navbar() {
           </div>
 
           <nav className="hidden md:flex items-center gap-10">
-            <Link href="/products" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
-              Equip
+            <Link href="/category/lifting-straps" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
+              Lifting Straps
               <span className="absolute -bottom-2 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
-            <Link href="/collections/all" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
-              Series
+            <Link href="/category/wrist-wraps" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
+              Wrist Wraps
+              <span className="absolute -bottom-2 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
+            </Link>
+            <Link href="/products" className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-white transition-colors relative group">
+              All Gear
               <span className="absolute -bottom-2 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
           </nav>
@@ -89,12 +93,16 @@ function Navbar() {
             className={`fixed inset-0 ${settings?.announcementBanner ? 'top-24' : 'top-20'} z-30 bg-background/95 md:hidden`}
           >
             <nav className="flex flex-col p-8 gap-8">
-              <Link href="/products" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                Equip <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/category/lifting-straps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                Lifting Straps <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
-              <Link href="/collections/all" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                Series <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/category/wrist-wraps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                Wrist Wraps <ChevronRight className="w-6 h-6 text-primary" />
+              </Link>
+              <div className="h-px bg-white/10 w-full" />
+              <Link href="/products" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
+                All Gear <ChevronRight className="w-6 h-6 text-primary" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
               <Link href="/support" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
@@ -187,8 +195,9 @@ function Footer() {
         <div>
           <h4 className="font-display font-bold uppercase tracking-[0.2em] mb-6 text-white text-lg">Armory</h4>
           <ul className="space-y-4 text-sm font-mono text-muted-foreground uppercase tracking-wider">
+            <li><Link href="/category/lifting-straps" className="hover:text-primary transition-colors">Lifting Straps</Link></li>
+            <li><Link href="/category/wrist-wraps" className="hover:text-primary transition-colors">Wrist Wraps</Link></li>
             <li><Link href="/products" className="hover:text-primary transition-colors">All Gear</Link></li>
-            <li><Link href="/collections/all" className="hover:text-primary transition-colors">Series</Link></li>
           </ul>
         </div>
         

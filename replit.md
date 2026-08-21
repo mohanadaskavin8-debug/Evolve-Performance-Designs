@@ -21,7 +21,7 @@ E-commerce storefront for anime/game-inspired lifting straps. **Shopify is the s
 
 ## Where things live
 
-- `artifacts/storefront` — customer storefront (root path `/`): home, shop, product detail, collections, cart, support, newsletter pages
+- `artifacts/storefront` — customer storefront (root path `/`): three-step shopping flow — home shows two category panels (Lifting Straps / Wrist Wraps) → `/category/:slug` lists that category's designs → `/products/:handle` product detail; plus all-gear shop, collections, cart, support, newsletter pages
 - `artifacts/admin` — static notice page pointing to Shopify Admin (the old custom admin portal was retired)
 - `artifacts/api-server` — Express API (`/api`): `/shop/*` (Shopify proxy), `/support`, `/newsletter`, `/marketing`, `/content`
 - `artifacts/api-server/src/lib/shopifyStorefrontClient.ts` — the ONLY module that talks to Shopify; env-based config, fails loudly (503) when unconfigured
@@ -38,7 +38,8 @@ E-commerce storefront for anime/game-inspired lifting straps. **Shopify is the s
 
 ## Product
 
-- Storefront: cinematic dark theme; shop grid, product detail with size variants, cart, Shopify checkout handoff, support form, newsletter signup with double opt-in.
+- Storefront: cinematic dark theme (red-on-black, scanlines, glitch hover effects); two-panel animated category home, per-category design pages, product detail with size variants, cart, Shopify checkout handoff, support form, newsletter signup with double opt-in.
+- Product categorization: driven by the Shopify **"Product type"** field — set it to `Lifting Straps` or `Wrist Wraps` on each product in Shopify Admin (the CSV import sets it automatically). Products with no type fall back to name matching ("wrist" in the name → Wrist Wraps side), defaulting to Lifting Straps. Logic lives in `artifacts/storefront/src/lib/categories.ts`.
 - Store owner works in Shopify Admin (`https://admin.shopify.com/store/ep-23446707`); the store is pre-launch and password-protected until launched.
 
 ## User preferences
