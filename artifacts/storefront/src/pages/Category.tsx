@@ -32,13 +32,21 @@ export default function Category() {
       <div className="absolute inset-0 scanlines opacity-20 pointer-events-none" />
       <div className="container mx-auto px-6 md:px-12 relative z-10">
         <div className="mb-20 text-center">
-          <motion.p 
+          <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="font-mono text-xs uppercase tracking-[0.3em] text-primary mb-4"
+            className="flex items-center justify-center gap-4 mb-4"
           >
-            {category.code} / Select your design
-          </motion.p>
+            <span className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+              {category.code} / Select your design
+            </span>
+            {!isLoading && (
+              <span className="font-mono text-[10px] uppercase tracking-widest text-black bg-primary px-2 py-0.5 font-bold">
+                {products.length} Design{products.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </motion.div>
+          
           <motion.h1 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

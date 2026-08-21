@@ -72,13 +72,22 @@ function Navbar() {
           </nav>
 
           <div className="flex items-center gap-6">
-            <Link href="/cart" className="relative text-muted-foreground hover:text-white transition-colors flex items-center">
-              <ShoppingCart className="w-5 h-5" />
-              {cart?.totalQuantity ? (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-sm">
-                  {cart.totalQuantity}
-                </span>
-              ) : null}
+            <Link href="/cart" className="relative text-muted-foreground hover:text-white transition-colors flex items-center group">
+              <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <AnimatePresence mode="popLayout">
+                {cart?.totalQuantity ? (
+                  <motion.span 
+                    key={cart.totalQuantity}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-sm shadow-[0_0_10px_rgba(255,0,0,0.5)]"
+                  >
+                    {cart.totalQuantity}
+                  </motion.span>
+                ) : null}
+              </AnimatePresence>
             </Link>
           </div>
         </div>
@@ -93,20 +102,20 @@ function Navbar() {
             className={`fixed inset-0 ${settings?.announcementBanner ? 'top-24' : 'top-20'} z-30 bg-background/95 md:hidden`}
           >
             <nav className="flex flex-col p-8 gap-8">
-              <Link href="/category/lifting-straps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                Lifting Straps <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/category/lifting-straps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center group" onClick={() => setMobileMenuOpen(false)}>
+                Lifting Straps <ChevronRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
-              <Link href="/category/wrist-wraps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                Wrist Wraps <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/category/wrist-wraps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center group" onClick={() => setMobileMenuOpen(false)}>
+                Wrist Wraps <ChevronRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
-              <Link href="/products" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                All Gear <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/products" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center group" onClick={() => setMobileMenuOpen(false)}>
+                All Gear <ChevronRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
               </Link>
               <div className="h-px bg-white/10 w-full" />
-              <Link href="/support" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center" onClick={() => setMobileMenuOpen(false)}>
-                Support <ChevronRight className="w-6 h-6 text-primary" />
+              <Link href="/support" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center group" onClick={() => setMobileMenuOpen(false)}>
+                Support <ChevronRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
               </Link>
             </nav>
           </motion.div>
