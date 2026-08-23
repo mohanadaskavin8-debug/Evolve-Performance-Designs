@@ -40,7 +40,7 @@ export default function Support() {
         <img 
           src={getProductImage('desert-war')} 
           alt="Support Header"
-          className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale mix-blend-screen"
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         <div className="relative z-10 text-center px-4 mt-16">

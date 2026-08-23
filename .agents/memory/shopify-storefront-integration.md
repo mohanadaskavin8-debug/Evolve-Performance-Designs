@@ -19,3 +19,4 @@ description: How this project talks to Shopify, token gotchas, and how to smoke-
 
 ## Smoke-testing without the owner's token
 The Replit Shopify connector's dev store can stand in for the owner's store: mint an ephemeral Storefront token via Admin GraphQL (`storefrontAccessTokenCreate`), test, then delete it (`storefrontAccessTokenDelete`) — never persist it.
+- Shopify keeps the original handle when a title is renamed — this catalog has renamed products (title "Knight At Night" has handle "soccer"; title "Soccer" has handle "wrist-wraps"), so keyword fallbacks on handles can mislead. Owner-confirmed override list in storefront categories.ts pins Knight At Night + Tokyo Drift to Wrist Wraps until Product types are set in Shopify Admin.

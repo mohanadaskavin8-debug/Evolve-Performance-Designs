@@ -14,30 +14,26 @@ function HomeCategoryPanel({ category, image, testId, delay, products }: { categ
     <Link href={`/category/${category.slug}`} data-testid={testId} className="block w-full group relative cursor-pointer">
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay, ease: "easeOut" }}
+        animate={{ opacity: 1, y: 0, transition: { duration: 0.8, delay, ease: "easeOut" } }}
+        whileHover={{ y: -12, scale: 1.02 }}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 260, damping: 13 }}
         className="flex flex-col items-center w-full"
       >
         {/* The Card */}
         <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-6">
-          <div className="absolute inset-0 scanlines opacity-50 z-20 pointer-events-none mix-blend-overlay" />
+          <div className="absolute inset-0 scanlines opacity-30 z-20 pointer-events-none mix-blend-overlay" />
           
           <img
             src={image}
-            className="absolute inset-0 w-full h-full object-cover z-0 grayscale mix-blend-luminosity opacity-50 group-hover:opacity-100 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
             alt={category.name}
           />
 
-          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors duration-700 z-10" />
+          <div className="absolute inset-0 bg-black/25 group-hover:bg-black/5 transition-colors duration-700 z-10" />
 
           {/* Hover border effect inside the panel */}
           <div className="absolute inset-0 border-[0px] border-primary/0 group-hover:border-[4px] group-hover:border-primary transition-all duration-500 z-30 pointer-events-none" />
-
-          {/* Recording indicator */}
-          <div className="absolute top-4 left-4 z-40 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(255,0,0,0.8)]" />
-            <span className="text-primary font-mono text-[10px] uppercase tracking-widest font-bold">Rec</span>
-          </div>
 
           {/* Commerce Chips */}
           <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2 pointer-events-none">
@@ -210,7 +206,7 @@ export default function Home() {
           <div className="absolute inset-0 scanlines opacity-50 z-20 pointer-events-none" />
           <motion.img 
             src={getProductImage('ninja-fire')} 
-            className="w-full h-full object-cover grayscale mix-blend-luminosity opacity-40" 
+            className="w-full h-full object-cover opacity-40" 
             alt="Background" 
             initial={{ scale: 1 }}
             whileInView={{ scale: 1.1 }}

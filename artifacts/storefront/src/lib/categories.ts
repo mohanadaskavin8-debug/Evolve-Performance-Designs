@@ -46,6 +46,14 @@ interface CategorizableProduct {
   handle?: string;
 }
 
+/**
+ * Designs the owner has confirmed are Wrist Wraps even though their
+ * Shopify "Product type" is still empty. Matched against title + handle
+ * (lowercase). Setting Product type = "Wrist Wraps" in Shopify Admin
+ * always takes priority over this list.
+ */
+const WRIST_WRAP_DESIGNS = ['knight at night', 'tokyo drift'];
+
 /** Decide which category a product belongs to. Defaults to lifting straps. */
 export function categorizeProduct(p: CategorizableProduct): CategorySlug {
   const type = (p.productType ?? '').toLowerCase();
@@ -53,7 +61,12 @@ export function categorizeProduct(p: CategorizableProduct): CategorySlug {
   if (type.includes('strap') || type.includes('lifting')) return 'lifting-straps';
 
   // No explicit type set in Shopify — fall back to name matching.
+  // Note: Shopify keeps the original handle when a product is renamed, so a
+  // stale handle can still carry meaning — e.g. the design now titled
+  // "Soccer" kept its original "wrist-wraps" handle and is intentionally
+  // kept in Wrist Wraps by this match.
   const text = `${p.title ?? ''} ${p.handle ?? ''}`.toLowerCase();
   if (text.includes('wrist')) return 'wrist-wraps';
+  if (WRIST_WRAP_DESIGNS.some((name) => text.includes(name))) return 'wrist-wraps';
   return 'lifting-straps';
 }

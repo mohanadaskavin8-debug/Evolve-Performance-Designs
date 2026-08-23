@@ -2,7 +2,7 @@ import { Link } from 'wouter';
 import { ShopProduct } from '@workspace/api-client-react';
 import { formatPrice, getProductImage } from '@/lib/utils';
 import { categorizeProduct, getCategory } from '@/lib/categories';
-import { Play } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export function ProductCard({ product }: { product: ShopProduct }) {
   const categorySlug = categorizeProduct(product);
@@ -12,19 +12,24 @@ export function ProductCard({ product }: { product: ShopProduct }) {
 
   return (
     <Link href={`/products/${product.handle}`} data-testid={`card-product-${product.handle}`}>
-      <div className="group relative flex flex-col cursor-pointer h-full">
+      <motion.div
+        whileHover={{ y: -10, scale: 1.03 }}
+        whileTap={{ scale: 0.96 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 12 }}
+        className="group relative flex flex-col cursor-pointer h-full"
+      >
         {/* The Card */}
         <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-4 flex-shrink-0">
           {/* Scanlines layer */}
-          <div className="absolute inset-0 scanlines opacity-50 z-20 mix-blend-overlay pointer-events-none" />
+          <div className="absolute inset-0 scanlines opacity-30 z-20 mix-blend-overlay pointer-events-none" />
           
           <img
             src={getProductImage(product.handle, product.imageUrl)}
             alt={product.title}
-            className="absolute inset-0 w-full h-full object-cover z-0 grayscale mix-blend-luminosity opacity-60 group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
           />
 
-          <div className="absolute inset-0 bg-black/40 z-10 group-hover:bg-black/10 transition-colors duration-500 pointer-events-none" />
+          <div className="absolute inset-0 bg-black/20 z-10 group-hover:bg-transparent transition-colors duration-500 pointer-events-none" />
           
           {/* Center Action Overlay */}
           <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
@@ -34,12 +39,6 @@ export function ProductCard({ product }: { product: ShopProduct }) {
           </div>
 
           <div className="absolute inset-0 border-[0px] border-primary/0 group-hover:border-[2px] group-hover:border-primary transition-all duration-300 z-30 pointer-events-none" />
-
-          {/* Recording indicator */}
-          <div className="absolute top-4 left-4 z-40 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(255,0,0,0.8)]" />
-            <span className="text-primary font-mono text-[10px] uppercase tracking-widest font-bold">Rec</span>
-          </div>
 
           {/* Badges */}
           <div className="absolute top-4 right-4 z-40 flex flex-col gap-2 items-end">
@@ -72,7 +71,7 @@ export function ProductCard({ product }: { product: ShopProduct }) {
             </span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </Link>
   );
 }

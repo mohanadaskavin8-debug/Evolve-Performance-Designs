@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-background relative flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-0 opacity-20 mix-blend-luminosity">
+      <div className="absolute inset-0 opacity-20">
         <img src={getProductImage('cyberpunk-girl')} alt="Background" className="w-full h-full object-cover" />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />

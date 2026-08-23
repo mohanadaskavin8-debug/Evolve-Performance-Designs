@@ -39,7 +39,7 @@ E-commerce storefront for anime/game-inspired lifting straps. **Shopify is the s
 ## Product
 
 - Storefront: cinematic dark theme (red-on-black, scanlines, glitch hover effects); two-panel animated category home, per-category design pages, product detail with size variants, cart, Shopify checkout handoff, support form, newsletter signup with double opt-in.
-- Product categorization: driven by the Shopify **"Product type"** field — set it to `Lifting Straps` or `Wrist Wraps` on each product in Shopify Admin (the CSV import sets it automatically). Products with no type fall back to name matching ("wrist" in the name → Wrist Wraps side), defaulting to Lifting Straps. Logic lives in `artifacts/storefront/src/lib/categories.ts`.
+- Product categorization: driven by the Shopify **"Product type"** field — set it to `Lifting Straps` or `Wrist Wraps` on each product in Shopify Admin (the CSV import sets it automatically). Products with no type fall back to name matching ("wrist" in the name → Wrist Wraps side), defaulting to Lifting Straps. A small override list in the same file pins owner-confirmed designs (Knight At Night, Tokyo Drift) to Wrist Wraps until Product types are set in Shopify Admin. Logic lives in `artifacts/storefront/src/lib/categories.ts`.
 - Storefront plays a ~2.5s cinematic logo intro on every full page load (`src/components/SiteIntro.tsx`); append `?intro=0` to skip it — tests and screenshots should do this. It auto-skips for users with reduced-motion enabled.
 - Store owner works in Shopify Admin (`https://admin.shopify.com/store/ep-23446707`); the store is pre-launch and password-protected until launched.
 
