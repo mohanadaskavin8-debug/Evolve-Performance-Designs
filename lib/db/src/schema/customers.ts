@@ -11,8 +11,6 @@ export const customersTable = pgTable("customers", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   phone: text("phone"),
-  marketingConsent: boolean("marketing_consent").notNull().default(false),
-  stripeCustomerId: text("stripe_customer_id").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [

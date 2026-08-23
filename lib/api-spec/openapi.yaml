@@ -6,7 +6,7 @@ info:
   description: >-
     Evolve Performance API — storefront reads products, collections, cart and
     checkout from the owner's Shopify store (server-side Storefront API);
-    newsletter, content pages and support remain first-party.
+    content pages and support remain first-party.
 servers:
   - url: /api
     description: Base API path
@@ -17,12 +17,8 @@ tags:
     description: Shopify-backed products, collections, cart and checkout
   - name: support
     description: Customer support
-  - name: newsletter
-    description: Newsletter subscriptions
   - name: content
     description: Website content management
-  - name: marketing
-    description: Public email marketing endpoints (unsubscribe)
 
 paths:
   /healthz:
@@ -357,7 +353,7 @@ paths:
     post:
       operationId: submitSupportRequest
       tags: [support]
-      summary: Submit a customer support request (notifies the store owner by email)
+      summary: Submit a customer support request (stored for the store owner)
       requestBody:
         required: true
         content:
@@ -371,26 +367,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SupportRequestResponse"
-
-  # ── Newsletter ────────────────────────────────────────────────────────────────
-  /newsletter/subscribe:
-    post:
-      operationId: subscribeNewsletter
-      tags: [newsletter]
-      summary: Subscribe to newsletter (records consent)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NewsletterSubscribeInput"
-      responses:
-        "200":
-          description: Subscribed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NewsletterSubscribeResponse"
 
   # ── Content ───────────────────────────────────────────────────────────────────
   /content/homepage:
@@ -443,94 +419,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SiteSettings"
-
-  # ── Public: unsubscribe ────────────────────────────────────────────────────
-  /marketing/unsubscribe/info:
-    get:
-      operationId: getUnsubscribeInfo
-      tags: [marketing]
-      summary: Resolve an unsubscribe token to its email address
-      parameters:
-        - name: token
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Token info
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnsubscribeInfo"
-        "400":
-          description: Invalid token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /marketing/unsubscribe:
-    post:
-      operationId: confirmUnsubscribe
-      tags: [marketing]
-      summary: Unsubscribe the address in the token (takes effect immediately)
-      parameters:
-        - name: token
-          in: query
-          required: false
-          schema:
-            type: string
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UnsubscribeInput"
-      responses:
-        "200":
-          description: Unsubscribed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnsubscribeResult"
-        "400":
-          description: Invalid token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /marketing/resubscribe:
-    post:
-      operationId: confirmResubscribe
-      tags: [marketing]
-      summary: Confirm re-subscription via signed token (double opt-in)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ResubscribeInput"
-      responses:
-        "200":
-          description: Re-subscribed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ResubscribeResult"
-        "400":
-          description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Address is hard-suppressed (bounce/complaint)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
 # ── Schemas ────────────────────────────────────────────────────────────────────
 components:
@@ -783,41 +671,6 @@ components:
         createdAt:
           type: string
 
-    # ── Newsletter ────────────────────────────────────────────────────────────
-    NewsletterSubscribeInput:
-      type: object
-      required: [email]
-      properties:
-        email:
-          type: string
-        firstName:
-          type: string
-        source:
-          type: string
-
-    NewsletterSubscribeResponse:
-      type: object
-      required: [subscribed]
-      properties:
-        subscribed:
-          type: boolean
-
-    ResubscribeInput:
-      type: object
-      required: [token]
-      properties:
-        token:
-          type: string
-
-    ResubscribeResult:
-      type: object
-      required: [confirmed]
-      properties:
-        confirmed:
-          type: boolean
-        email:
-          type: string
-
     # ── Content ───────────────────────────────────────────────────────────────
     HomepageContent:
       type: object
@@ -894,23 +747,3 @@ components:
           type: ["string", "null"]
         announcementBanner:
           type: ["string", "null"]
-
-    # ── Marketing (public) ────────────────────────────────────────────────────
-    UnsubscribeInfo:
-      type: object
-      required: [email, alreadyUnsubscribed]
-      properties:
-        email: { type: string }
-        alreadyUnsubscribed: { type: boolean }
-
-    UnsubscribeInput:
-      type: object
-      properties:
-        token: { type: ["string", "null"] }
-
-    UnsubscribeResult:
-      type: object
-      required: [unsubscribed, email]
-      properties:
-        unsubscribed: { type: boolean }
-        email: { type: string }

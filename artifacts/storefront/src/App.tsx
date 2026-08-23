@@ -16,8 +16,6 @@ import ProductDetail from '@/pages/ProductDetail';
 import CollectionDetail from '@/pages/CollectionDetail';
 import Cart from '@/pages/Cart';
 import Support from '@/pages/Support';
-import Unsubscribe from '@/pages/Unsubscribe';
-import ConfirmSubscription from '@/pages/ConfirmSubscription';
 import ContentPage from '@/pages/ContentPage';
 import NotFound from '@/pages/not-found';
 
@@ -57,8 +55,6 @@ function Router() {
               <Route path="/collections/:slug" component={CollectionDetail} />
               <Route path="/cart" component={Cart} />
               <Route path="/support" component={Support} />
-              <Route path="/unsubscribe" component={Unsubscribe} />
-              <Route path="/confirm-subscription" component={ConfirmSubscription} />
               <Route path="/pages/:pageKey" component={ContentPage} />
               <Route component={NotFound} />
             </Switch>

@@ -14,31 +14,31 @@ E-commerce storefront for anime/game-inspired lifting straps. **Shopify is the s
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5 · DB: PostgreSQL + Drizzle ORM (website content + support/newsletter only)
+- API: Express 5 · DB: PostgreSQL + Drizzle ORM (website content + support requests only)
 - Commerce: Shopify Storefront API (GraphQL, version pinned in `shopifyStorefrontClient.ts`)
 - API codegen: Orval from `lib/api-spec/openapi.yaml` → `lib/api-client-react` hooks + `lib/api-zod`
-- Email: Resend via Replit integration (owner notifications for support requests, newsletter/marketing loop)
+- No email pipeline: Resend/newsletter/marketing code was removed — customer email lives in Shopify
 
 ## Where things live
 
-- `artifacts/storefront` — customer storefront (root path `/`): three-step shopping flow — home shows two category panels (Lifting Straps / Wrist Wraps) → `/category/:slug` lists that category's designs → `/products/:handle` product detail; plus all-gear shop, collections, cart, support, newsletter pages
+- `artifacts/storefront` — customer storefront (root path `/`): three-step shopping flow — home shows two category panels (Lifting Straps / Wrist Wraps) → `/category/:slug` lists that category's designs → `/products/:handle` product detail; plus all-gear shop, collections, cart, support pages
 - `artifacts/admin` — static notice page pointing to Shopify Admin (the old custom admin portal was retired)
-- `artifacts/api-server` — Express API (`/api`): `/shop/*` (Shopify proxy), `/support`, `/newsletter`, `/marketing`, `/content`
+- `artifacts/api-server` — Express API (`/api`): `/shop/*` (Shopify proxy), `/support`, `/content`
 - `artifacts/api-server/src/lib/shopifyStorefrontClient.ts` — the ONLY module that talks to Shopify; env-based config, fails loudly (503) when unconfigured
 - `artifacts/api-server/src/routes/shop.ts` — products/collections/cart endpoints; converts money to integer cents; cart mutations are RPC-style POSTs
 
 ## Architecture decisions
 
 - **Shopify token stays server-side**: the browser never sees `SHOPIFY_STOREFRONT_ACCESS_TOKEN`; the storefront calls `/api/shop/*` only.
-- **No local commerce state**: cart lives in Shopify (cart id in browser localStorage `ep_shopify_cart_id`); checkout = redirect to `cart.checkoutUrl` (Shopify hosted checkout). No Stripe, no ShipStation, no user accounts (Clerk removed).
+- **No local commerce state**: cart lives in Shopify (cart id in browser localStorage `ep_shopify_cart_id`); checkout = redirect to `cart.checkoutUrl` (Shopify hosted checkout). No Stripe, no ShipStation, no email pipeline (Resend removed), no user accounts (Clerk removed).
 - **Money is integer cents** end-to-end in the API (`priceInCents` etc.), converted server-side from Shopify's decimal amounts.
 - **Featured products** = Shopify tag `featured` (fallback: 4 newest). **Theme** = first non-"featured" tag.
-- **Old commerce DB tables were kept** (orders, products, etc.) — non-destructive migration; only website-content tables are actively used (site_settings, homepage_sections, website_pages, support_requests, newsletter_subscribers + marketing tables).
-- **Support requests**: DB insert + fire-and-forget email to owner (Resend, Reply-To = customer).
+- **Old commerce DB tables were kept** (orders, products, etc.) — non-destructive migration; only website-content tables are actively used (site_settings, homepage_sections, website_pages, support_requests). Stripe/ShipStation columns and marketing/newsletter tables were removed from the Drizzle schema (code only — real DB tables were not dropped).
+- **Support requests**: stored in the DB only — no email notification. Any order number the customer enters is prefixed into the stored message (`[Order …]`).
 
 ## Product
 
-- Storefront: cinematic dark theme (red-on-black, scanlines, glitch hover effects); two-panel animated category home, per-category design pages, product detail with size variants, cart, Shopify checkout handoff, support form, newsletter signup with double opt-in.
+- Storefront: cinematic dark theme (red-on-black, scanlines, glitch hover effects); two-panel animated category home, per-category design pages, product detail with size variants, cart, Shopify checkout handoff, support form.
 - Product categorization: driven by the Shopify **"Product type"** field — set it to `Lifting Straps` or `Wrist Wraps` on each product in Shopify Admin (the CSV import sets it automatically). Products with no type fall back to name matching ("wrist" in the name → Wrist Wraps side), defaulting to Lifting Straps. A small override list in the same file pins owner-confirmed designs (Knight At Night, Tokyo Drift) to Wrist Wraps until Product types are set in Shopify Admin. Logic lives in `artifacts/storefront/src/lib/categories.ts`.
 - Storefront plays a ~2.5s cinematic logo intro on every full page load (`src/components/SiteIntro.tsx`); append `?intro=0` to skip it — tests and screenshots should do this. It auto-skips for users with reduced-motion enabled.
 - Store owner works in Shopify Admin (`https://admin.shopify.com/store/ep-23446707`); the store is pre-launch and password-protected until launched.

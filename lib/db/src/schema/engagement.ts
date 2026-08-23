@@ -39,20 +39,5 @@ export const supportRequestsTable = pgTable("support_requests", {
   index("support_status_idx").on(t.status),
 ]);
 
-export const emailSubscribersTable = pgTable("email_subscribers", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  firstName: text("first_name"),
-  source: text("source").notNull().default("website"),
-  status: text("status").notNull().default("active"), // 'active' | 'unsubscribed'
-  consentAt: timestamp("consent_at").notNull().defaultNow(),
-  unsubscribedAt: timestamp("unsubscribed_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (t) => [
-  index("subscribers_email_idx").on(t.email),
-  index("subscribers_status_idx").on(t.status),
-]);
-
 export type Review = typeof reviewsTable.$inferSelect;
 export type SupportRequest = typeof supportRequestsTable.$inferSelect;
-export type EmailSubscriber = typeof emailSubscribersTable.$inferSelect;

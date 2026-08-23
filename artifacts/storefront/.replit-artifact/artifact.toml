@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
 title = "Evolve Performance Storefront"
-description = "Cinematic customer-facing e-commerce storefront for Evolve Performance — anime/movie-themed lifting straps, wristbands, belts, and fitness accessories. Features a skippable cinematic intro, scroll-driven animations, shop/collections/product pages, cart, checkout with Stripe, order tracking, and customer accounts via Clerk."
+description = "Cinematic customer-facing e-commerce storefront for Evolve Performance — anime/movie-themed lifting straps and wrist wraps. Features a skippable cinematic intro, scroll-driven animations, a two-category home, category and product pages, cart, and Shopify hosted checkout; all product, cart and checkout data comes from the owner's Shopify store via the server-side API."
 version = "1.0.0"
 id = "artifacts/storefront"
 router = "path"

@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/admin/"
 title = "Evolve Performance Admin"
-description = "Business operating system for Evolve Performance. Secure admin portal at /admin with Clerk RBAC (Owner/Manager/Staff roles). Modules: dashboard with real-time metrics and attention feed, orders lifecycle management with Stripe refund/cancel, returns review with inventory adjustments, products CRUD with wizard, design import, inventory management, customers, discounts, shipping rates, website content editor, admin user management, activity log, financial reporting, CSV exports, and system health status."
+description = "Static notice page at /admin pointing the store owner to Shopify Admin. The old custom admin portal was retired — products, inventory, orders, discounts, shipping and customer email are all managed in Shopify."
 version = "1.0.0"
 id = "artifacts/admin"
 router = "path"

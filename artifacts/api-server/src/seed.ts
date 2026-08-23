@@ -42,7 +42,6 @@ async function seed() {
     { key: "brand-story", sectionType: "brand_story", position: 3, active: true, title: "Born from Anime. Built for Iron.", subtitle: null },
     { key: "stats-bar", sectionType: "stats", position: 4, active: true, title: "Numbers Don't Lie", subtitle: null },
     { key: "testimonials", sectionType: "reviews", position: 5, active: true, title: "From the Community", subtitle: null },
-    { key: "newsletter", sectionType: "newsletter", position: 6, active: true, title: "Join the Dojo", subtitle: "Training tips, new drops, and exclusive discounts." },
   ];
   for (const s of sectionRows) {
     await db.insert(homepageSectionsTable).values(s).onConflictDoUpdate({ target: homepageSectionsTable.key, set: s });

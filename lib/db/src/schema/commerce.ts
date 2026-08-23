@@ -24,7 +24,7 @@ export const shippingRatesTable = pgTable("shipping_rates", {
   minimumOrderInCents: integer("minimum_order_in_cents"),
   estimatedDays: text("estimated_days").notNull().default("5-10 business days"),
   active: boolean("active").notNull().default(true),
-  // For rateType 'calculated': which ShipStation carrier/service quotes the live rate.
+  // For rateType 'calculated': which carrier/service quotes the live rate (legacy, unused).
   carrierCode: text("carrier_code"),
   serviceCode: text("service_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
