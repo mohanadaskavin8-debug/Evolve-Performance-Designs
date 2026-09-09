@@ -133,7 +133,7 @@ export default function ProductDetail() {
       {/* Full product image gallery */}
       <div className="w-full mb-16">
         <div
-          className="group/gallery relative w-full aspect-[16/10] md:aspect-auto md:h-[58vh] md:max-h-[760px] bg-black border-y border-white/10 flex items-center justify-center overflow-hidden touch-pan-y"
+          className="group/gallery relative w-full overflow-hidden touch-pan-y"
           onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
           onTouchEnd={(event) => finishSwipe(event.changedTouches[0]?.clientX ?? 0)}
         >
@@ -141,7 +141,7 @@ export default function ProductDetail() {
             key={activeImage}
             src={activeImage}
             alt={`${product.title} — image ${activeImageIndex + 1} of ${productImages.length}`}
-            className="w-full h-full object-contain"
+            className="block w-full h-auto"
           />
 
           {hasMultipleImages && (
@@ -150,7 +150,7 @@ export default function ProductDetail() {
                 type="button"
                 onClick={showPreviousImage}
                 aria-label="Show previous product image"
-                className="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 border border-white/20 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
+                className="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition-colors"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -158,11 +158,11 @@ export default function ProductDetail() {
                 type="button"
                 onClick={showNextImage}
                 aria-label="Show next product image"
-                className="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 border border-white/20 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
+                className="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition-colors"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
-              <span className="absolute right-4 bottom-4 bg-black/75 border border-white/15 px-3 py-2 font-mono text-xs text-white tracking-widest">
+              <span className="absolute right-4 bottom-4 bg-black/75 px-3 py-2 font-mono text-xs text-white tracking-widest">
                 {activeImageIndex + 1} / {productImages.length}
               </span>
             </>
