@@ -73,7 +73,7 @@ export default function Category() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 gap-y-16 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 gap-4 gap-y-10 md:gap-12 md:gap-y-16 max-w-6xl mx-auto">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="w-full aspect-[4/3] md:aspect-video bg-white/5 animate-pulse border border-white/10" />
             ))}
@@ -89,7 +89,7 @@ export default function Category() {
             </p>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 gap-y-16 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 gap-4 gap-y-10 md:gap-12 md:gap-y-16 max-w-6xl mx-auto">
             {products.map((product, i) => (
               <motion.div
                 key={product.id}

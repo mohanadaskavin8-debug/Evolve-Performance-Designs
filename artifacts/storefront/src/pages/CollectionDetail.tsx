@@ -53,7 +53,7 @@ export default function CollectionDetail() {
             <p className="font-mono text-muted-foreground uppercase tracking-widest">No gear active in this series.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-16">
+          <div className="grid grid-cols-2 gap-4 gap-y-10 md:gap-12 md:gap-y-16">
             {collection.products.map((product, i) => (
               <motion.div
                 key={product.id}

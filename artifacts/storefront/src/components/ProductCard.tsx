@@ -19,7 +19,7 @@ export function ProductCard({ product }: { product: ShopProduct }) {
         className="group relative flex flex-col cursor-pointer h-full"
       >
         {/* The Card */}
-        <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-4 flex-shrink-0">
+        <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-3 md:mb-4 flex-shrink-0">
           {/* Scanlines layer */}
           <div className="absolute inset-0 scanlines opacity-30 z-20 mix-blend-overlay pointer-events-none" />
           
@@ -57,11 +57,11 @@ export function ProductCard({ product }: { product: ShopProduct }) {
 
         {/* Labels Beneath */}
         <div className="text-left w-full z-10 flex-1 flex flex-col justify-between">
-          <h3 className="font-display font-bold uppercase tracking-[0.15em] text-lg md:text-xl text-white group-hover:text-primary transition-colors glitch-text line-clamp-2" data-text={product.title}>
+          <h3 className="font-display font-bold uppercase tracking-[0.1em] text-sm sm:text-base md:text-xl text-white group-hover:text-primary transition-colors glitch-text line-clamp-2" data-text={product.title}>
             {product.title}
           </h3>
-          <div className="flex justify-between items-center text-[10px] md:text-xs font-mono uppercase tracking-widest text-muted-foreground mt-3 border-t border-white/10 pt-3">
-            <span className="truncate pr-2">{category?.name || 'Lifting Straps'}</span>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-[9px] md:text-xs font-mono uppercase tracking-wider md:tracking-widest text-muted-foreground mt-2 md:mt-3 border-t border-white/10 pt-2 md:pt-3">
+            <span className="truncate">{category?.name || 'Lifting Straps'}</span>
             <span className="text-white group-hover:text-primary transition-colors duration-300 whitespace-nowrap font-bold">
               {!hasValidPrice 
                 ? 'PRICE TBA'
