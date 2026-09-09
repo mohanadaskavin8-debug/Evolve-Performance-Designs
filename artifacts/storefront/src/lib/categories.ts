@@ -57,8 +57,11 @@ const WRIST_WRAP_DESIGNS = ['knight at night', 'tokyo drift'];
 /** Decide which category a product belongs to. Untyped products default to wrist wraps. */
 export function categorizeProduct(p: CategorizableProduct): CategorySlug {
   const type = (p.productType ?? '').toLowerCase();
-  if (type.includes('wrist')) return 'wrist-wraps';
-  if (type.includes('strap') || type.includes('lifting')) return 'lifting-straps';
+  // Shopify taxonomy names used by this store:
+  // "Weight Lifting Wrist Wrap" and "Weight Lifting Straps".
+  // Check wrist first because both names contain "weight lifting".
+  if (type.includes('wrist wrap') || type.includes('wrist')) return 'wrist-wraps';
+  if (type.includes('lifting strap') || type.includes('strap')) return 'lifting-straps';
 
   // No explicit type set in Shopify — fall back to name matching.
   // Note: Shopify keeps the original handle when a product is renamed, so a

@@ -38,6 +38,7 @@ type GqlProductCard = {
   handle: string;
   title: string;
   productType: string;
+  category: { name: string } | null;
   availableForSale: boolean;
   tags: string[];
   featuredImage: GqlImage;
@@ -51,7 +52,9 @@ function mapProductCard(p: GqlProductCard) {
     id: p.id,
     handle: p.handle,
     title: p.title,
-    productType: p.productType || null,
+    // Shopify's taxonomy "Category" is separate from the optional custom
+    // "Product type" field. Prefer Product type, then use Category.
+    productType: p.productType || p.category?.name || null,
     priceMinInCents: toCents(p.priceRange.minVariantPrice.amount),
     priceMaxInCents: toCents(p.priceRange.maxVariantPrice.amount),
     compareAtPriceInCents: compareAt > 0 ? compareAt : null,
@@ -68,6 +71,7 @@ const PRODUCT_CARD_FRAGMENT = /* GraphQL */ `
     handle
     title
     productType
+    category { name }
     availableForSale
     tags
     featuredImage { url }
@@ -250,6 +254,7 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
         handle: string;
         title: string;
         productType: string;
+        category: { name: string } | null;
         description: string;
         descriptionHtml: string;
         availableForSale: boolean;
@@ -275,6 +280,7 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
           handle
           title
           productType
+          category { name }
           description
           descriptionHtml
           availableForSale
@@ -308,7 +314,7 @@ router.get("/products/:handle", async (req: Request, res: Response) => {
       id: p.id,
       handle: p.handle,
       title: p.title,
-      productType: p.productType || null,
+      productType: p.productType || p.category?.name || null,
       description: p.description,
       descriptionHtml: p.descriptionHtml || null,
       theme: deriveTheme(p.tags),
