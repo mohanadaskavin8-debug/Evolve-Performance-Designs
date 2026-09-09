@@ -6,7 +6,7 @@ import {
 } from '@workspace/api-client-react';
 import { getProductImage, formatPrice, getStoredCartId, storeCartId } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { ChevronRight, ArrowLeft, Shield, Truck, RotateCcw, AlertTriangle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ArrowLeft, Shield, Truck, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Link } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,6 +26,8 @@ export default function ProductDetail() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   // (Re)initialize selection whenever a different product loads — the same
   // component instance is reused when navigating between product pages.
@@ -34,6 +36,7 @@ export default function ProductDetail() {
     const defaultVariant = product.variants.find(v => v.availableForSale) || product.variants[0];
     setSelectedVariantId(defaultVariant?.id ?? null);
     setQuantity(1);
+    setActiveImageIndex(0);
   }, [product?.id]);
 
   const selectedVariant = product?.variants.find(v => v.id === selectedVariantId);
@@ -89,7 +92,32 @@ export default function ProductDetail() {
     );
   }
 
-  const cinematicImage = getProductImage(product.handle, product.imageUrl);
+  const fallbackImage = getProductImage(product.handle, product.imageUrl);
+  const productImages = product.images?.length ? product.images : [fallbackImage];
+  const activeImage = productImages[activeImageIndex] ?? productImages[0];
+  const hasMultipleImages = productImages.length > 1;
+
+  const showPreviousImage = () => {
+    setActiveImageIndex((current) =>
+      current === 0 ? productImages.length - 1 : current - 1,
+    );
+  };
+
+  const showNextImage = () => {
+    setActiveImageIndex((current) =>
+      current === productImages.length - 1 ? 0 : current + 1,
+    );
+  };
+
+  const finishSwipe = (endX: number) => {
+    if (touchStartX == null) return;
+    const distance = endX - touchStartX;
+    if (Math.abs(distance) > 45) {
+      if (distance < 0) showNextImage();
+      else showPreviousImage();
+    }
+    setTouchStartX(null);
+  };
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-32">
@@ -102,14 +130,71 @@ export default function ProductDetail() {
         <span className="text-white">{product.title}</span>
       </div>
 
-      {/* Cinematic Bleed Header */}
-      <div className="w-full relative h-[30vh] md:h-[50vh] bg-black border-y border-white/10 flex items-center justify-center overflow-hidden mb-16">
-        <img 
-          src={cinematicImage} 
-          alt={product.title}
-          className="strap-panorama absolute inset-0 opacity-80"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+      {/* Full product image gallery */}
+      <div className="w-full mb-16">
+        <div
+          className="group/gallery relative w-full aspect-[16/10] md:aspect-auto md:h-[58vh] md:max-h-[760px] bg-black border-y border-white/10 flex items-center justify-center overflow-hidden touch-pan-y"
+          onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
+          onTouchEnd={(event) => finishSwipe(event.changedTouches[0]?.clientX ?? 0)}
+        >
+          <img
+            key={activeImage}
+            src={activeImage}
+            alt={`${product.title} — image ${activeImageIndex + 1} of ${productImages.length}`}
+            className="w-full h-full object-contain"
+          />
+
+          {hasMultipleImages && (
+            <>
+              <button
+                type="button"
+                onClick={showPreviousImage}
+                aria-label="Show previous product image"
+                className="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 border border-white/20 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                type="button"
+                onClick={showNextImage}
+                aria-label="Show next product image"
+                className="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 border border-white/20 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              <span className="absolute right-4 bottom-4 bg-black/75 border border-white/15 px-3 py-2 font-mono text-xs text-white tracking-widest">
+                {activeImageIndex + 1} / {productImages.length}
+              </span>
+            </>
+          )}
+        </div>
+
+        {hasMultipleImages && (
+          <div className="container mx-auto px-6 md:px-12 pt-4">
+            <div className="flex gap-3 overflow-x-auto pb-2" aria-label="Product images">
+              {productImages.map((image, index) => (
+                <button
+                  type="button"
+                  key={`${image}-${index}`}
+                  onClick={() => setActiveImageIndex(index)}
+                  aria-label={`Show product image ${index + 1}`}
+                  aria-current={activeImageIndex === index}
+                  className={`h-20 w-24 md:h-24 md:w-32 shrink-0 border bg-black transition-colors ${
+                    activeImageIndex === index
+                      ? 'border-primary'
+                      : 'border-white/15 hover:border-white/50'
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt=""
+                    className="w-full h-full object-contain"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="container mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-16">
