@@ -132,45 +132,47 @@ export default function ProductDetail() {
 
       {/* Full product image gallery */}
       <div className="w-full mb-16">
-        <div
-          className="group/gallery relative w-full overflow-hidden touch-pan-y"
-          onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
-          onTouchEnd={(event) => finishSwipe(event.changedTouches[0]?.clientX ?? 0)}
-        >
-          <img
-            key={activeImage}
-            src={activeImage}
-            alt={`${product.title} — image ${activeImageIndex + 1} of ${productImages.length}`}
-            className="block w-full h-auto"
-          />
+        <div className="mx-auto w-full max-w-5xl px-4 md:px-8">
+          <div
+            className="group/gallery relative w-full overflow-hidden touch-pan-y"
+            onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
+            onTouchEnd={(event) => finishSwipe(event.changedTouches[0]?.clientX ?? 0)}
+          >
+            <img
+              key={activeImage}
+              src={activeImage}
+              alt={`${product.title} — image ${activeImageIndex + 1} of ${productImages.length}`}
+              className="block w-full h-auto"
+            />
 
-          {hasMultipleImages && (
-            <>
-              <button
-                type="button"
-                onClick={showPreviousImage}
-                aria-label="Show previous product image"
-                className="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition-colors"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                type="button"
-                onClick={showNextImage}
-                aria-label="Show next product image"
-                className="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-14 md:h-14 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition-colors"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-              <span className="absolute right-4 bottom-4 bg-black/75 px-3 py-2 font-mono text-xs text-white tracking-widest">
-                {activeImageIndex + 1} / {productImages.length}
-              </span>
-            </>
-          )}
+            {hasMultipleImages && (
+              <>
+                <button
+                  type="button"
+                  onClick={showPreviousImage}
+                  aria-label="Show previous product image"
+                  className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={showNextImage}
+                  aria-label="Show next product image"
+                  className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 bg-black/70 backdrop-blur-sm text-white flex items-center justify-center hover:bg-primary transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+                <span className="absolute right-4 bottom-4 bg-black/75 px-3 py-2 font-mono text-xs text-white tracking-widest">
+                  {activeImageIndex + 1} / {productImages.length}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {hasMultipleImages && (
-          <div className="container mx-auto px-6 md:px-12 pt-4">
+          <div className="mx-auto w-full max-w-5xl px-4 md:px-8 pt-4">
             <div className="flex gap-3 overflow-x-auto pb-2" aria-label="Product images">
               {productImages.map((image, index) => (
                 <button
