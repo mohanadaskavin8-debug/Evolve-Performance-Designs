@@ -3,8 +3,8 @@
  * Home (2 category cards) → Category page (design cards) → Product detail.
  *
  * Categorization is driven by the Shopify "Product type" field (productType).
- * Products with no type fall back to a title/handle keyword match so the
- * store keeps working even before the owner sets types in Shopify Admin.
+ * Products with no type fall back to a title/handle keyword match, then to
+ * Wrist Wraps because the owner's current catalog consists of wrist wraps.
  */
 
 export type CategorySlug = 'lifting-straps' | 'wrist-wraps';
@@ -54,7 +54,7 @@ interface CategorizableProduct {
  */
 const WRIST_WRAP_DESIGNS = ['knight at night', 'tokyo drift'];
 
-/** Decide which category a product belongs to. Defaults to lifting straps. */
+/** Decide which category a product belongs to. Untyped products default to wrist wraps. */
 export function categorizeProduct(p: CategorizableProduct): CategorySlug {
   const type = (p.productType ?? '').toLowerCase();
   if (type.includes('wrist')) return 'wrist-wraps';
@@ -68,5 +68,5 @@ export function categorizeProduct(p: CategorizableProduct): CategorySlug {
   const text = `${p.title ?? ''} ${p.handle ?? ''}`.toLowerCase();
   if (text.includes('wrist')) return 'wrist-wraps';
   if (WRIST_WRAP_DESIGNS.some((name) => text.includes(name))) return 'wrist-wraps';
-  return 'lifting-straps';
+  return 'wrist-wraps';
 }
