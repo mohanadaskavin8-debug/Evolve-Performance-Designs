@@ -76,11 +76,14 @@ export default function Home() {
 
   const products = data?.products || [];
   const wristWraps = products.filter(p => categorizeProduct(p) === 'wrist-wraps');
-  
-  const liftingImage = getProductImage('neon-japan');
-  const wristImage = wristWraps[0]?.imageUrl || getProductImage('cyberpunk-girl');
-
   const liftingStraps = products.filter(p => categorizeProduct(p) === 'lifting-straps');
+  const nightOps = products.find(p => p.title.toLowerCase() === 'night ops');
+  const lightningFury = products.find(p => p.title.toLowerCase() === 'lightning fury');
+
+  const liftingImage =
+    nightOps?.imageUrl || liftingStraps[0]?.imageUrl || getProductImage('neon-japan');
+  const wristImage =
+    lightningFury?.imageUrl || wristWraps[0]?.imageUrl || getProductImage('cyberpunk-girl');
 
   if (contentLoading || productsLoading) {
     return (
