@@ -22,11 +22,17 @@ function HomeCategoryPanel({ category, image, testId, delay, products }: { categ
       >
         {/* The Card */}
         <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-6">
+          {/* A blurred copy fills unused space without cropping the real image. */}
+          <img
+            src={image}
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60 z-0"
+          />
           <div className="absolute inset-0 scanlines opacity-30 z-20 pointer-events-none mix-blend-overlay" />
           
           <img
             src={image}
-            className="absolute inset-0 w-full h-full object-contain z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-contain z-[1] group-hover:scale-105 transition-transform duration-700 ease-out"
             alt={category.name}
           />
 

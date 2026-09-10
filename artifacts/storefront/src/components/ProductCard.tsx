@@ -20,13 +20,19 @@ export function ProductCard({ product }: { product: ShopProduct }) {
       >
         {/* The Card */}
         <div className="relative w-full aspect-[4/3] md:aspect-video border border-white/10 bg-black overflow-hidden red-underglow mb-3 md:mb-4 flex-shrink-0">
+          {/* A blurred copy fills unused space without cropping the real image. */}
+          <img
+            src={getProductImage(product.handle, product.imageUrl)}
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60 z-0"
+          />
           {/* Scanlines layer */}
           <div className="absolute inset-0 scanlines opacity-30 z-20 mix-blend-overlay pointer-events-none" />
           
           <img
             src={getProductImage(product.handle, product.imageUrl)}
             alt={product.title}
-            className="absolute inset-0 w-full h-full object-contain z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-contain z-[1] group-hover:scale-105 transition-transform duration-700 ease-out"
           />
 
           <div className="absolute inset-0 bg-black/20 z-10 group-hover:bg-transparent transition-colors duration-500 pointer-events-none" />
