@@ -26,7 +26,7 @@ function HomeCategoryPanel({ category, image, testId, delay, products }: { categ
           
           <img
             src={image}
-            className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-contain z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
             alt={category.name}
           />
 

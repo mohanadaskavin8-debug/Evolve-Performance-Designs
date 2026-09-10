@@ -302,7 +302,7 @@ export default function ProductDetail() {
               ) : isOutOfStock ? (
                 'Inventory Depleted'
               ) : (
-                'Initialize Loadout'
+                'Add to Cart'
               )}
             </button>
             

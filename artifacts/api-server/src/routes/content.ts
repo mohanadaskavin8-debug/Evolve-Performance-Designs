@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { siteSettingsTable, websitePagesTable, homepageSectionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { FAQ_HTML, RETURN_POLICY_HTML } from "../lib/store-pages";
 
 const router = Router();
 
@@ -40,10 +41,17 @@ router.get("/page/:pageKey", async (req, res) => {
 
     if (!page || !page.isPublished) return res.status(404).json({ error: "Page not found" });
 
+    const maintainedBody =
+      page.key === "faq"
+        ? FAQ_HTML
+        : page.key === "return-policy"
+          ? RETURN_POLICY_HTML
+          : page.body;
+
     res.json({
       key: page.key,
       title: page.title,
-      body: page.body,
+      body: maintainedBody,
       updatedAt: page.updatedAt.toISOString(),
     });
   } catch {

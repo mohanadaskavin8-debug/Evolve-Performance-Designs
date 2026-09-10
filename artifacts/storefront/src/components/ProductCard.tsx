@@ -26,7 +26,7 @@ export function ProductCard({ product }: { product: ShopProduct }) {
           <img
             src={getProductImage(product.handle, product.imageUrl)}
             alt={product.title}
-            className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-contain z-0 group-hover:scale-105 transition-transform duration-700 ease-out"
           />
 
           <div className="absolute inset-0 bg-black/20 z-10 group-hover:bg-transparent transition-colors duration-500 pointer-events-none" />

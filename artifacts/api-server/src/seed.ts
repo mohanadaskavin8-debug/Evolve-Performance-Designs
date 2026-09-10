@@ -8,6 +8,7 @@
  */
 
 import { db } from "@workspace/db";
+import { FAQ_HTML, RETURN_POLICY_HTML } from "./lib/store-pages";
 import {
   siteSettingsTable, homepageSectionsTable, websitePagesTable,
 } from "@workspace/db";
@@ -53,10 +54,10 @@ async function seed() {
     { key: "privacy", title: "Privacy Policy", body: "# Privacy Policy\n\nLast updated: January 2025\n\nEvolve Performance takes your privacy seriously. This policy describes how we collect, use, and protect your personal information when you use our website and services." },
     { key: "terms", title: "Terms of Service", body: "# Terms of Service\n\nLast updated: January 2025\n\nBy accessing or using the Evolve Performance website, you agree to be bound by these Terms of Service." },
     { key: "shipping-policy", title: "Shipping Policy", body: "# Shipping Policy\n\nWe ship worldwide. Shipping options and rates are shown at checkout. US orders ship within 1-2 business days. International orders ship within 2-3 business days. Customs duties and taxes may apply for international orders." },
-    { key: "return-policy", title: "Return Policy", body: "# Return Policy\n\n30-day returns on unwashed, unworn items in original packaging. Contact us via the support page to start a return. Refunds processed within 5-7 business days." },
+    { key: "return-policy", title: "No Return Policy", body: RETURN_POLICY_HTML },
     { key: "about", title: "About Evolve Performance", body: "# About Us\n\nEvolve Performance was born from a simple idea: your training gear should be as legendary as your favorite characters. We create lifting straps, wristbands, and accessories for athletes who train with purpose and passion." },
     { key: "story", title: "Our Story", body: "# Our Story\n\nIt started in a garage gym with a set of anime posters and a barbell. We wanted lifting straps that matched the energy we brought to every training session. When we couldn't find them, we made them." },
-    { key: "faq", title: "Frequently Asked Questions", body: "# FAQ\n\n## How do I choose my size?\nMost athletes do well with M/L. If you have wrists larger than 7 inches, go with XL/XXL.\n\n## How do I wash my straps?\nMachine wash cold, hang dry. Do not bleach or tumble dry.\n\n## Do you ship internationally?\nYes! We ship to 100+ countries worldwide.\n\n## How long until my order arrives?\nUS: 3-7 business days. International: 7-21 business days." },
+    { key: "faq", title: "Frequently Asked Questions", body: FAQ_HTML },
   ];
   for (const p of pages) {
     await db.insert(websitePagesTable).values({ ...p, isPublished: true }).onConflictDoUpdate({ target: websitePagesTable.key, set: { body: p.body, title: p.title } });
