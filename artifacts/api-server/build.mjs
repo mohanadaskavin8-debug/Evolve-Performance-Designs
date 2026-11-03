@@ -10,12 +10,25 @@ globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
+// Usage:
+//   node build.mjs                       → dist/index.mjs (local dev server)
+//   node build.mjs --vercel <outdir>     → <outdir>/index.mjs (Vercel serverless function)
+const vercelFlag = process.argv.indexOf("--vercel");
+const vercelOutArg = vercelFlag === -1 ? null : process.argv[vercelFlag + 1];
+if (vercelFlag !== -1 && (!vercelOutArg || !vercelOutArg.endsWith(".func"))) {
+  // The output folder is wiped first, so refuse anything but a *.func folder.
+  throw new Error("--vercel needs an output folder ending in .func");
+}
+const vercelOutDir = vercelOutArg ? path.resolve(vercelOutArg) : null;
+
 async function buildAll() {
-  const distDir = path.resolve(artifactDir, "dist");
+  const distDir = vercelOutDir ?? path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
 
   await esbuild({
-    entryPoints: [path.resolve(artifactDir, "src/index.ts")],
+    entryPoints: vercelOutDir
+      ? { index: path.resolve(artifactDir, "src/vercel.ts") }
+      : [path.resolve(artifactDir, "src/index.ts")],
     platform: "node",
     bundle: true,
     format: "esm",
@@ -102,10 +115,16 @@ async function buildAll() {
       "electron",
     ],
     sourcemap: "linked",
-    plugins: [
-      // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
-      esbuildPluginPino({ transports: ["pino-pretty"] })
-    ],
+    // On Vercel, logs are plain JSON lines to stdout (no pino-pretty worker
+    // threads), so NODE_ENV is fixed to production and the pino plugin —
+    // which hard-codes build-machine paths for its worker files — is skipped.
+    define: vercelOutDir ? { "process.env.NODE_ENV": '"production"' } : undefined,
+    plugins: vercelOutDir
+      ? []
+      : [
+          // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
+          esbuildPluginPino({ transports: ["pino-pretty"] }),
+        ],
     // Make sure packages that are cjs only (e.g. express) but are bundled continue to work in our esm output file
     banner: {
       js: `import { createRequire as __bannerCrReq } from 'node:module';

@@ -1,35 +1,40 @@
 import { useState } from 'react';
-import { useSubmitSupportRequest } from '@workspace/api-client-react';
 import { useToast } from '@/hooks/use-toast';
 import { getProductImage } from '@/lib/utils';
-import { Mail, MessageSquare } from 'lucide-react';
+import { SITE } from '@/content/site';
+import { Copy, Mail, MessageSquare } from 'lucide-react';
+
+/** Builds a mailto: link so the message opens, pre-filled, in the customer's own email app. */
+function buildSupportMailto({ subject, message, orderNumber }: { subject: string; message: string; orderNumber: string }) {
+  const order = orderNumber.trim();
+  const fullSubject = order ? `[Order ${order}] ${subject.trim()}` : subject.trim();
+  const body = order ? `Order number: ${order}\n\n${message.trim()}` : message.trim();
+  return `mailto:${SITE.supportEmail}?subject=${encodeURIComponent(fullSubject)}&body=${encodeURIComponent(body)}`;
+}
 
 export default function Support() {
   const { toast } = useToast();
-  const submitRequest = useSubmitSupportRequest();
 
-  const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Fields are kept (not cleared) so the customer can copy them if no email app opens.
+    window.location.href = buildSupportMailto({ subject, message, orderNumber });
+    toast({
+      title: "Opening Your Email App",
+      description: `Your message is ready — just hit send. If nothing opened, email us at ${SITE.supportEmail}.`,
+    });
+  };
+
+  const copyEmail = async () => {
     try {
-      await submitRequest.mutateAsync({
-        data: {
-          email,
-          subject,
-          message,
-          orderNumber: orderNumber || undefined,
-        }
-      });
-      toast({ title: "Message Transmitted", description: "Command has received your transmission. Stand by for comms." });
-      setSubject('');
-      setMessage('');
-      setOrderNumber('');
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Error", description: err.message || "Failed to transmit message." });
+      await navigator.clipboard.writeText(SITE.supportEmail);
+      toast({ title: "Address Copied", description: SITE.supportEmail });
+    } catch {
+      toast({ title: "Our Email", description: SITE.supportEmail });
     }
   };
 
@@ -62,17 +67,6 @@ export default function Support() {
             </h3>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">Operative Email</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-black border border-white/20 px-4 py-3 text-white font-mono focus:outline-none focus:border-primary transition-colors"
-                  required
-                />
-              </div>
-              
               <div>
                 <label className="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">Order Number (Optional)</label>
                 <input 
@@ -108,11 +102,13 @@ export default function Support() {
 
               <button 
                 type="submit"
-                disabled={submitRequest.isPending}
-                className="w-full bg-white text-black py-4 font-mono font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                className="w-full bg-white text-black py-4 font-mono font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all"
               >
-                {submitRequest.isPending ? "Transmitting..." : "Send Transmission"}
+                Send Transmission
               </button>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground text-center">
+                Opens your email app with your message ready to send.
+              </p>
             </form>
           </div>
 
@@ -124,7 +120,18 @@ export default function Support() {
                 Our support operatives monitor frequencies Monday through Friday, 0900 - 1700 EST. Expected response time: 24-48 hours.
               </p>
               <div className="flex items-center gap-3 font-mono text-xs text-white uppercase tracking-widest">
-                <Mail className="w-4 h-4 text-primary" /> support@evolveperformance.com
+                <Mail className="w-4 h-4 text-primary shrink-0" />
+                <a href={`mailto:${SITE.supportEmail}`} className="text-[11px] tracking-wider md:text-xs md:tracking-widest hover:text-primary transition-colors break-all">
+                  {SITE.supportEmail}
+                </a>
+                <button
+                  type="button"
+                  onClick={copyEmail}
+                  aria-label="Copy email address"
+                  className="ml-auto text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
             </div>
 

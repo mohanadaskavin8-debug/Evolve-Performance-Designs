@@ -1,13 +1,9 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
+// Local development server. On Vercel the app runs as a serverless function
+// instead (see src/vercel.ts) and this file is not used.
+const rawPort = process.env["PORT"] ?? "8080";
 
 const port = Number(rawPort);
 

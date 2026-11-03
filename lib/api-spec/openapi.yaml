@@ -5,8 +5,8 @@ info:
   version: 0.2.0
   description: >-
     Evolve Performance API — storefront reads products, collections, cart and
-    checkout from the owner's Shopify store (server-side Storefront API);
-    content pages and support remain first-party.
+    checkout from the owner's Shopify store (server-side Storefront API).
+    Content pages live in the storefront code; there is no database.
 servers:
   - url: /api
     description: Base API path
@@ -15,10 +15,6 @@ tags:
     description: Health operations
   - name: shop
     description: Shopify-backed products, collections, cart and checkout
-  - name: support
-    description: Customer support
-  - name: content
-    description: Website content management
 
 paths:
   /healthz:
@@ -348,78 +344,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  # ── Support ───────────────────────────────────────────────────────────────────
-  /support/requests:
-    post:
-      operationId: submitSupportRequest
-      tags: [support]
-      summary: Submit a customer support request (stored for the store owner)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SupportRequestInput"
-      responses:
-        "201":
-          description: Support request created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SupportRequestResponse"
-
-  # ── Content ───────────────────────────────────────────────────────────────────
-  /content/homepage:
-    get:
-      operationId: getHomepageContent
-      tags: [content]
-      summary: Get published homepage content and section order
-      responses:
-        "200":
-          description: Homepage content
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HomepageContent"
-
-  /content/page/{pageKey}:
-    get:
-      operationId: getPageContent
-      tags: [content]
-      summary: Get a content page by key (story, about, faq, privacy, terms, shipping-policy, return-policy, cookie-policy, accessibility)
-      parameters:
-        - name: pageKey
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Page content
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PageContent"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /content/settings:
-    get:
-      operationId: getSiteSettings
-      tags: [content]
-      summary: Get public site settings (name, logo, social links, announcement)
-      responses:
-        "200":
-          description: Site settings
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SiteSettings"
-
 # ── Schemas ────────────────────────────────────────────────────────────────────
 components:
   schemas:
@@ -643,107 +567,3 @@ components:
           type: string
         lineId:
           type: string
-
-    # ── Support ───────────────────────────────────────────────────────────────
-    SupportRequestInput:
-      type: object
-      required: [email, subject, message]
-      properties:
-        email:
-          type: string
-        name:
-          type: string
-        subject:
-          type: string
-        message:
-          type: string
-        orderNumber:
-          type: ["string", "null"]
-
-    SupportRequestResponse:
-      type: object
-      required: [id, status, createdAt]
-      properties:
-        id:
-          type: integer
-        status:
-          type: string
-        createdAt:
-          type: string
-
-    # ── Content ───────────────────────────────────────────────────────────────
-    HomepageContent:
-      type: object
-      required: [sections, heroHeadline, heroSubtext]
-      properties:
-        heroHeadline:
-          type: string
-        heroSubtext:
-          type: string
-        heroCtaPrimary:
-          type: string
-        heroCtaSecondary:
-          type: string
-        announcementBanner:
-          type: ["string", "null"]
-        announcementActive:
-          type: boolean
-        sections:
-          type: array
-          items:
-            $ref: "#/components/schemas/HomepageSection"
-
-    HomepageSection:
-      type: object
-      required: [key, sectionType, position, active]
-      properties:
-        key:
-          type: string
-        sectionType:
-          type: string
-        position:
-          type: integer
-        active:
-          type: boolean
-        title:
-          type: ["string", "null"]
-        subtitle:
-          type: ["string", "null"]
-
-    PageContent:
-      type: object
-      required: [key, title, body, updatedAt]
-      properties:
-        key:
-          type: string
-        title:
-          type: string
-        body:
-          type: string
-        updatedAt:
-          type: string
-
-    SiteSettings:
-      type: object
-      required: [businessName, currency, supportEmail]
-      properties:
-        businessName:
-          type: string
-        logoUrl:
-          type: ["string", "null"]
-        faviconUrl:
-          type: ["string", "null"]
-        supportEmail:
-          type: string
-        currency:
-          type: string
-        defaultCountry:
-          type: string
-        socialInstagram:
-          type: ["string", "null"]
-        socialTiktok:
-          type: ["string", "null"]
-        socialYoutube:
-          type: ["string", "null"]
-        announcementBanner:
-          type: ["string", "null"]

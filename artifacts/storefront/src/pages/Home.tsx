@@ -1,4 +1,4 @@
-import { useListShopProducts, useGetHomepageContent, ShopProduct } from '@workspace/api-client-react';
+import { useListShopProducts, ShopProduct } from '@workspace/api-client-react';
 import { ProductCard } from '@/components/ProductCard';
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
@@ -78,7 +78,6 @@ function HomeCategoryPanel({ category, image, testId, delay, products }: { categ
 
 export default function Home() {
   const { data, isLoading: productsLoading } = useListShopProducts({ limit: 50 });
-  const { data: content, isLoading: contentLoading } = useGetHomepageContent();
 
   const products = data?.products || [];
   const wristWraps = products.filter(p => categorizeProduct(p) === 'wrist-wraps');
@@ -91,7 +90,7 @@ export default function Home() {
   const wristImage =
     lightningFury?.imageUrl || wristWraps[0]?.imageUrl || getProductImage('cyberpunk-girl');
 
-  if (contentLoading || productsLoading) {
+  if (productsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="w-16 h-16 border-t-2 border-primary rounded-full animate-spin"></div>

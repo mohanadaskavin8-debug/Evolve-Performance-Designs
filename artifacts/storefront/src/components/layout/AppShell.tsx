@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'wouter';
 import { ShoppingCart, Menu, X, ChevronRight } from 'lucide-react';
-import { useGetSiteSettings, useGetShopCart, getGetShopCartQueryKey } from '@workspace/api-client-react';
+import { useGetShopCart, getGetShopCartQueryKey } from '@workspace/api-client-react';
+import { SITE } from '@/content/site';
 import { useCartId } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,7 +20,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function Navbar() {
-  const { data: settings } = useGetSiteSettings({ query: { queryKey: ['site-settings'] } });
   const cartId = useCartId();
   const { data: cart } = useGetShopCart(
     { cartId: cartId ?? undefined },
@@ -29,13 +29,13 @@ function Navbar() {
 
   return (
     <>
-      {settings?.announcementBanner && (
+      {SITE.announcementBanner && (
         <div className="fixed top-0 left-0 right-0 h-8 bg-foreground text-background flex items-center justify-center text-xs font-mono tracking-widest z-50 uppercase">
-          {settings.announcementBanner}
+          {SITE.announcementBanner}
         </div>
       )}
       
-      <header className={`fixed ${settings?.announcementBanner ? 'top-8' : 'top-0'} left-0 right-0 h-20 border-b border-white/5 bg-background/60 backdrop-blur-xl z-40 transition-all`}>
+      <header className={`fixed ${SITE.announcementBanner ? 'top-8' : 'top-0'} left-0 right-0 h-20 border-b border-white/5 bg-background/60 backdrop-blur-xl z-40 transition-all`}>
         <div className="px-6 md:px-12 h-full flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button className="md:hidden text-white hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -99,7 +99,7 @@ function Navbar() {
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
             animate={{ opacity: 1, backdropFilter: "blur(16px)" }}
             exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className={`fixed inset-0 ${settings?.announcementBanner ? 'top-24' : 'top-20'} z-30 bg-background/95 md:hidden`}
+            className={`fixed inset-0 ${SITE.announcementBanner ? 'top-24' : 'top-20'} z-30 bg-background/95 md:hidden`}
           >
             <nav className="flex flex-col p-8 gap-8">
               <Link href="/category/lifting-straps" className="text-2xl font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-white flex justify-between items-center group" onClick={() => setMobileMenuOpen(false)}>
@@ -126,8 +126,6 @@ function Navbar() {
 }
 
 function Footer() {
-  const { data: settings } = useGetSiteSettings({ query: { queryKey: ['site-settings'] } });
-
   return (
     <footer className="border-t border-white/10 bg-background pt-20 pb-10">
       <div className="container mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -167,7 +165,7 @@ function Footer() {
         </div>
       </div>
       <div className="container mx-auto px-6 md:px-12 mt-20 pt-8 border-t border-white/5 text-xs font-mono text-muted-foreground flex flex-col md:flex-row justify-between items-center uppercase tracking-widest">
-        <p>&copy; {new Date().getFullYear()} {settings?.businessName || 'Evolve Performance'}. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} {SITE.businessName}. All rights reserved.</p>
         <div className="flex gap-8 mt-6 md:mt-0">
           <Link href="/pages/privacy" className="hover:text-white transition-colors">Privacy</Link>
           <Link href="/pages/terms" className="hover:text-white transition-colors">Terms</Link>
